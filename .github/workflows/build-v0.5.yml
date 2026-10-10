@@ -1,4 +1,4 @@
-name: Build v0.5.1 Tap-Hold Mute + One-Click Setup
+name: Build v0.6 Hybrid UI + One-Click Setup
 on:
   push:
     branches: [main]
@@ -15,7 +15,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: v0.5.1-alpha-release
+  group: v0.6.0-alpha-release
   cancel-in-progress: true
 jobs:
   build:
@@ -82,6 +82,7 @@ jobs:
           node --check com.noobatwork.voicemeeter.sdPlugin/settings.js
           node --check com.noobatwork.voicemeeter.sdPlugin/compact-gestures.js
           node --check com.noobatwork.voicemeeter.sdPlugin/fader-model.js
+          node --check com.noobatwork.voicemeeter.sdPlugin/tile-renderer.js
           node --test tests/*.test.cjs
       - name: Package source ZIP and Windows helper
         shell: bash
@@ -98,20 +99,20 @@ jobs:
           if (-not (Test-Path $iscc)) { throw "Inno Setup compiler not found: $iscc" }
           & $iscc 'installer\NoobatWork.iss'
           if ($LASTEXITCODE -ne 0) { throw 'Setup.exe compilation failed' }
-          $setup = Get-ChildItem -Recurse -File -Filter 'NoobatWork-Voicemeeter-Control-v0.5.1-alpha-Setup.exe' | Select-Object -First 1
+          $setup = Get-ChildItem -Recurse -File -Filter 'NoobatWork-Voicemeeter-Control-v0.6.0-alpha-Setup.exe' | Select-Object -First 1
           if (-not $setup) { throw 'Setup.exe output was not produced' }
-          Copy-Item -LiteralPath $setup.FullName -Destination 'NoobatWork-Voicemeeter-Control-v0.5.1-alpha-Setup.exe'
+          Copy-Item -LiteralPath $setup.FullName -Destination 'NoobatWork-Voicemeeter-Control-v0.6.0-alpha-Setup.exe'
       - name: Publish setup and ZIP to GitHub Pre-Release
         shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = 'v0.5.1-alpha'
+          $tag = 'v0.6.0-alpha'
           $existing = @(gh release list --limit 100 --json tagName | ConvertFrom-Json | Where-Object { $_.tagName -eq $tag })
           if ($LASTEXITCODE -ne 0) { throw 'Could not list releases' }
           if ($existing.Count -eq 0) {
-            gh release create $tag --prerelease --title 'v0.5.1-alpha – App Mixer + Setup' --notes 'Experimental Windows application-session mixer. Self-contained setup automatically stops, backs up, updates and restarts Stream Deck. Windows and iPad runtime validation still required.'
+            gh release create $tag --prerelease --title 'v0.6.0-alpha – Hybrid UI Design' --notes 'Dark hybrid tiles with per-application colors, Windows executable icons where available, true audio meters, themed compact keys. Previous gestures and auto-update preserved. Validate on your iPad before treating this as a stable UI release. v0.5.1-alpha remains available.'
             if ($LASTEXITCODE -ne 0) { throw 'Could not create release' }
           }
-          gh release upload $tag 'NoobatWork-Voicemeeter-Control-v0.5.1-alpha-Setup.exe' 'NoobatWork-Voicemeeter-Control-v0.5.1-alpha.zip' --clobber
+          gh release upload $tag 'NoobatWork-Voicemeeter-Control-v0.6.0-alpha-Setup.exe' 'NoobatWork-Voicemeeter-Control-v0.6.0-alpha.zip' --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Could not upload release assets' }
