@@ -1,71 +1,62 @@
-# NoobatWork – Voicemeeter Control 🎛️
+# NoobatWork Voicemeeter Control
 
-Windows-Plugin für **Stream Deck und Stream Deck Mobile (iPad)**. Steuert Voicemeeter Potato direkt und ab **v0.5.1-alpha** zusätzlich einzelne Windows-Audioanwendungen, auch wenn mehrere davon denselben Voicemeeter-VAIO3-Eingang verwenden.
+**Stream Deck / Stream Deck Mobile mixer for Windows and Voicemeeter Potato.** 
+The plugin supports individual Windows app audio sessions and Voicemeeter channels, with a one-click auto-updater.
 
-> **v0.5.1-alpha – optionales Mute-Bedienexperiment.** Version v0.5.0-alpha (App-Erkennung, App-Fader und automatisches Setup) wurde auf dem Zielsystem erfolgreich getestet. v0.5.1-alpha ändert ausschließlich die wählbare Geste für App-Mixer und Kompakt-Mixer. Vorhandene Tasten behalten standardmäßig die klassische Doppeltipp-Steuerung.
+## v0.6.0-alpha — Hybrid UI redesign
 
-## Download
+The original iPad mixer mockup inspired the design; this release upgrades **actual Stream Deck key images** (144x144 px) rather than pretending Stream Deck Mobile has full-size draggable touch faders.
 
-- **[v0.5.1-alpha Setup.exe herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.5.1-alpha/NoobatWork-Voicemeeter-Control-v0.5.1-alpha-Setup.exe)** – empfohlen: ein Klick, kein manuelles Beenden von Stream Deck mehr.
-- **[v0.5.1-alpha ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.5.1-alpha/NoobatWork-Voicemeeter-Control-v0.5.1-alpha.zip)** – alternative Installation über `INSTALL.bat`. Diese verwendet dieselbe automatische Installationsroutine.
+- Unified premium dark key backgrounds with rounded corners, clear gain / percent numbers and subtler borders.
+- Per-app accent colors: Discord purple/blue, Opera GX red, Firefox orange, game violet, microphones mint/green, Voicemeeter buses cyan.
+- Extracted **real app icons** from Windows executable files where Windows permits it. Falls back to an app-name monogram if icon access is unavailable; never downloads icons from the internet.
+- True live Windows session peak meter for applications and existing genuine Voicemeeter meter for hardware/virtual channels. The **volume bar** and **actual audio activity meter** remain distinct.
+- Clear red muted state and an explicit OFFLINE state.
+- Per-key **Design**: Hybrid (default), Neon Streamer, Clean Pro; selectable accent override.
+- Existing per-key **Mute-Bedienung** preserved: classic double tap or tap-then-hold mode. The audio commands, channels, installer backup logic and keys from v0.5.1-alpha are not intentionally changed.
 
-Der Installer ist noch **nicht digital signiert**. Windows SmartScreen kann deshalb beim ersten Start eine Warnung anzeigen. Lade ihn nur aus dem oben verlinkten offiziellen Projekt-Release herunter. **Keine Administratorrechte erforderlich.**
+> **v0.6.0-alpha is a preview** until tested on actual Stream Deck Mobile / iPad hardware. App icons may be missing for protected applications, and nested PNGs in dynamic SVG keys require validation on your specific Stream Deck version. Roll back using the proven v0.5.1-alpha installer if needed.
 
-## NEU v0.5.1-alpha: Zwei auswählbare Mute-Gesten
+### Downloads
 
-Im Stream-Deck-Desktopeditor kannst du jetzt bei **App-Mixer** und **Kompakt-Mixer** pro Taste die **Mute-Bedienung** auswählen:
+- **[Download v0.6.0-alpha Setup.exe](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.6.0-alpha/NoobatWork-Voicemeeter-Control-v0.6.0-alpha-Setup.exe)**
+- **[Alternative: v0.6.0-alpha ZIP](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.6.0-alpha/NoobatWork-Voicemeeter-Control-v0.6.0-alpha.zip)**
+- **[Last tested reference: v0.5.1-alpha](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/tag/v0.5.1-alpha)**
 
-| Modus | Schnelles Tippen | Lauter / Leiser | Mute |
-|---|---|---|---|
-| **Klassisch (Standard)** | Zweiter schneller Tipp mutet | 1x tippen / halten | 2x schnell tippen |
-| **Neu: Tap + Hold** | Jeder kurze Tipp macht sofort lauter, selbst bei schnellem Mehrfachtippen | Tippen / gewöhnlich halten | Einmal kurz tippen, danach den zweiten Tipp innerhalb von 280 ms mindestens 350 ms halten |
+### Installation and upgrade
 
-**Zum Ausprobieren:** In Stream Deck eine vorhandene **App-Mixer**- oder **Kompakt-Mixer**-Taste wählen und unter **Mute-Bedienung** die zweite Option „Neu: kurz tippen, dann halten (350 ms)“ einstellen. Die Einstellung wird wie alle anderen pro Taste gespeichert. Beim ersten kurzen Tipp wird die Lautstärke sofort um eine Schrittweite erhöht; wenn der unmittelbar folgende Tipp gehalten wird, wird Mute umgeschaltet. Beim ersten langen Tastendruck wird nach 520 ms leiser geregelt; nach der Tap-Hold-Mute-Geste wird kein Leiser-Befehl ausgelöst.
+Run Setup.exe while Stream Deck is still open. Setup automatically closes it, backs up the installed plugin to
+\`%APPDATA%\NoobatWork\VoicemeeterControl\Backups\`, installs the new version, and restarts Stream Deck. It works without administrator rights. Existing Stream Deck profiles are stored outside the plugin folder, so the installer does not replace them. If installation fails, it tries to restore the backup. For diagnostics, see \`%APPDATA%\NoobatWork\VoicemeeterControl\setup.log\`.
 
-**Hinweis:** Kein echter Finger-Drag, sondern die vorhandenen Stream-Deck-`keyDown`-/`keyUp`-Ereignisse. Die neue Geste ist automatisiert, aber noch nicht auf deinem iPad getestet. Die alte und auf deinem iPad bestätigte Version findest du hier: [v0.5.0-alpha](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/tag/v0.5.0-alpha).
+The unsigned setup may trigger a Windows SmartScreen warning. Only use files downloaded from this official GitHub repository's release.
 
-## Automatisches Update mit Setup.exe
+### Mixer controls
 
-1. `NoobatWork-Voicemeeter-Control-v0.5.1-alpha-Setup.exe` starten.
-2. Der Installer beendet bei Bedarf Stream Deck automatisch, auch wenn es noch im Windows-Infobereich läuft.
-3. Die vorherige Plugin-Version wird unter `%APPDATA%\NoobatWork\VoicemeeterControl\Backups` gesichert; deine Stream-Deck-Profile liegen außerhalb dieses Plugin-Verzeichnisses und bleiben erhalten.
-4. Die neue Version wird installiert. Bei einem Installationsfehler versucht der Installer, die vorherige Version aus dem Backup wiederherzustellen.
-5. Stream Deck wird automatisch neu gestartet. Das Installationsprotokoll liegt unter `%APPDATA%\NoobatWork\VoicemeeterControl\setup.log`.
+All settings belong to each Stream Deck key. The new design controls appear inside that key's Property Inspector.
 
-## NEU: App-Mixer – Discord, Opera GX und weitere Programme separat regeln
+| Action | Function |
+|---|---|
+| App-Mixer | Windows application-session volume in percent, separate Mute, live meter and application icon |
+| Kompakt-Mixer | Hardware or virtual input/output gain in dB, mute and live Voicemeeter signal peak |
+| Live-Fader | Existing Voicemeeter channel display / mute |
+| Lauter / Leiser | Increment or decrement the selected channel by a configured amount |
+| Mute | Toggle the whole configured Voicemeeter strip or bus |
+| Touch-Fader Segment | One of five programmable gain positions |
 
-Die neue Aktion **App-Mixer** verwendet einen **separaten Windows-Core-Audio-Hilfsprozess** (NAudio/WASAPI), der laufende Playback-Audiositzungen über **alle aktiven Windows-Ausgabegeräte** findet, einschließlich virtueller Voicemeeter-Geräte.
+The plugin detects Windows audio sessions across active output devices (including VAIO3) using a separate bundled NAudio helper. Apps using the same \`.exe\` are grouped together; apps with different executable names are individually controllable. The helper talks to the plugin only over local stdin/stdout—**no Flask server or extra TCP port**.
 
-1. In Stream Deck eine **App-Mixer**-Aktion auf eine freie Taste ziehen.
-2. Die Taste im Stream-Deck-Desktopeditor anklicken und im unteren Einstellungsbereich **Windows-Audioanwendung** auswählen.
-3. Falls eine App nicht auftaucht: die Anwendung starten, kurz Ton abspielen und **Anwendungen neu suchen** anklicken.
-4. Weitere App-Mixer-Tasten für Discord, Opera GX, Firefox usw. anlegen und jeweils eine andere Anwendung auswählen.
+For **App-Mixer** and **Kompakt-Mixer**, selectable per-key gestures:
+- **Classic default:** tap +, hold −, double-tap mute.
+- **Tap + Hold:** each short tap immediately increases volume—even during rapid sequences; hold the second touch for 350 ms within 280 ms of the prior short tap to toggle mute; a normal single long press decreases volume.
 
-**Bedienung auf dem iPad:** Kurz tippen = Anwendung lauter, gedrückt halten = leiser. Mute wird je nach ausgewähltem Modus durch Doppeltippen oder kurzes Tippen mit anschließendem Halten ausgelöst. Die Schrittweite steht bei der App-Mixer-Aktion in **Prozentpunkten** (z. B. 2 %). Auf der Taste erscheinen App-Name, tatsächlicher Windows-Audiositzungs-Lautstärkewert in % und Mute-Status.
+**Stream Deck keypad events do not support actual continuous finger dragging within a single key.** The future iPad UI will be a separate, full-width interface that really supports sliders.
 
-**Wichtig:** Der App-Mixer regelt den Windows-Audiositzungs-Lautstärkewert, nicht den gesamten Voicemeeter-Strip. Apps, die denselben `Strip[7]` / VAIO3 verwenden, können getrennt geregelt werden. Wenn ein Programm mehrere Audiositzungen oder Instanzen unter **demselben EXE-Namen** hat, werden sie gemeinsam gesteuert. Unterschiedliche EXE-Namen erhalten separate Regler.
+### Planned next: dedicated iPad interface
 
-Wenn eine Anwendung keine aktive Audiositzung hat, wird auf der Taste `OFFLINE` angezeigt. Die bisherigen Voicemeeter-Kanäle bleiben dabei unabhängig erreichbar.
+Our next project phase after v0.6 is validated: an actual iPad-oriented, touch-first mixer UI inspired by the dark, seven-channel mockup with full-height vertical faders, app icons, adjustable audio routing, true meters, mute indicators, and configurable layouts. The Stream Deck plugin remains an independent, installable fallback. See [the iPad product roadmap](docs/IPAD_APP_ROADMAP.md).
 
-## Bestehende Funktionen bleiben erhalten
+### Development and test
 
-- **Live-Fader** mit dB-Anzeige, echtem Signalpegel und Mute.
-- **Kompakt-Mixer** für ganze Strips oder Busse: eine Taste, Tippen + / Halten − / Doppeltippen Mute.
-- **Lauter / Leiser** mit einstellbarer Schrittweite pro Taste.
-- **Fünfstufiger Touch-Fader** mit konfigurierbarem Bereich.
-- **Mute** als separate Aktion.
-- **Strip 0–7 / Bus 0–7**, mit gespeicherter Auswahl je Taste.
+Source code is open in this repository. CI uses Windows to compile the self-contained .NET 8 audio helper, test IPC, run unit tests, validate Windows PowerShell installer syntax, smoke-test backups, and build Inno Setup.exe.
 
-`Strip[7]` ist **Virtual Input 3**, `Bus[0]` ist Ausgang A1. Es gibt keinen durchgehenden Slider per Finger-Drag innerhalb einer Stream-Deck-Mobile-Taste.
-
-## Technik & Tests
-
-- Das bestehende Voicemeeter-Gain-/Mute-System verwendet die funktionierende lokale PowerShell-Bridge mit `VoicemeeterRemote64.dll`. Die neue Anwendungserkennung verändert diese Bridge nicht.
-- Der Windows-App-Helfer ist ein selbständiges **.NET-8-Windows-Programm**, in der ZIP und Setup.exe eingebettet, das über stdin/stdout mit dem Plugin spricht. Kein zusätzlicher Flask-Server, TCP-Port oder manuelle .NET-Installation nötig.
-- Die Anwendungserkennung nutzt [NAudio](https://github.com/naudio/NAudio) (MIT-Lizenz) für die Windows-Core-Audio-API. Die Projekt-Lizenz ist [MIT](LICENSE).
-- GitHub Actions kompiliert den Helfer unter Windows, überprüft die Windows-PowerShell-Installationsroutine, führt die Node-Tests aus, erstellt das ZIP und kompiliert das Setup mit Inno Setup.
-- Durch erfolgreiche CI-Tests wird die Funktion auf deinem echten Windows-System nicht automatisch bestätigt. Das prüfen wir gemeinsam.
-
-**Bewährte Rückfallversion:** [v0.5.0-alpha](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/tag/v0.5.0-alpha).
-
-© 2026 NoobatWorkttv · [Elgato Stream Deck SDK](https://docs.elgato.com/streamdeck/sdk/) · [Microsoft Core Audio](https://learn.microsoft.com/en-us/windows/win32/coreaudio/core-audio-apis)
+© NoobatWork 2026 · MIT License · [Elgato Stream Deck SDK](https://docs.elgato.com/streamdeck/sdk/) · [NAudio](https://github.com/naudio/NAudio)
