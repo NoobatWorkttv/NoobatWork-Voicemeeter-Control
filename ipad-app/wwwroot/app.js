@@ -183,25 +183,37 @@
     const meta=document.createElement('div');meta.className='channel-meta';
     root.append(top,reading,area,controls,meta);
     root._ui={logo,title,subtitle,value,detail,fill,knob,levels,slider,scale,mute,meta};
-    root._dragging=false;root._lastWrite=0;
+    root._dragging=false;root._lastWrite=0;root._heldUntil=0;root._lastLit=-1;root._dragRect=null;
     slider.addEventListener('pointerdown',e=>{
       if(!client.connected||!root._item?.online)return;
-      e.preventDefault();root._dragging=true;slider.setPointerCapture(e.pointerId);
+      e.preventDefault();root._dragging=true;root._heldUntil=0;
+      root._dragRect=slider.getBoundingClientRect();
+      slider.setPointerCapture(e.pointerId);
       dragTo(e,true);
     });
     slider.addEventListener('pointermove',e=>{if(root._dragging)dragTo(e,false);});
-    function stopDrag(e){if(!root._dragging)return;dragTo(e,true);root._dragging=false;}
+    function stopDrag(e){
+      if(!root._dragging)return;
+      dragTo(e,true);root._dragging=false;root._dragRect=null;
+      root._heldUntil=performance.now()+1300;
+    }
     slider.addEventListener('pointerup',stopDrag);
-    slider.addEventListener('pointercancel',()=>root._dragging=false);
-    slider.addEventListener('lostpointercapture',()=>root._dragging=false);
+    slider.addEventListener('pointercancel',()=>{
+      root._dragging=false;root._dragRect=null;root._heldUntil=performance.now()+1300;
+    });
+    slider.addEventListener('lostpointercapture',()=>{
+      if(root._dragging)root._heldUntil=performance.now()+1300;
+      root._dragging=false;root._dragRect=null;
+    });
     function dragTo(e,force){
-      const item=root._item,rect=slider.getBoundingClientRect();
+      const item=root._item,rect=root._dragRect||slider.getBoundingClientRect();
       const frac=clamp((rect.bottom-e.clientY)/Math.max(rect.height,1),0,1);
       let val=item.min+frac*(item.max-item.min);
       val=item.type==='app'?Math.round(val):Math.round(val*10)/10;
-      item.volume=val;updateCard(root,item);
+      item.volume=val;
+      updateFaderValue(root,item);
       const now=performance.now();
-      if(force||now-root._lastWrite>=75){
+      if(force||now-root._lastWrite>=110){
         root._lastWrite=now;command(item,'set',val);
       }
     }
@@ -220,6 +232,16 @@
     return root;
   }
 
+  function updateFaderValue(root,item){
+    const u=root._ui;
+    const next=item.online?(item.muted?'MUTED':item.type==='app'?Math.round(item.volume)+'%':db(item.volume)+' dB'):'OFFLINE';
+    if(u.value.textContent!==next)u.value.textContent=next;
+    const frac=clamp((item.volume-item.min)/(item.max-item.min),0,1);
+    const percent=(frac*100).toFixed(2)+'%';
+    if(u.fill.style.height!==percent)u.fill.style.height=percent;
+    if(u.knob.style.bottom!==percent)u.knob.style.bottom=percent;
+    u.slider.setAttribute('aria-valuenow',Math.round(item.volume*10)/10);
+  }
   function updateCard(root,item){
     root._item=item;root.style.setProperty('--accent',accentFor(item));
     root.classList.toggle('is-muted',item.muted);
@@ -234,13 +256,11 @@
         u.logo.textContent=initials;
       }
     }
-    u.title.textContent=item.name;
-    u.subtitle.textContent=item.subtitle;
-    u.value.textContent=item.online?(item.muted?'MUTED':item.type==='app'?Math.round(item.volume)+'%':db(item.volume)+' dB'):'OFFLINE';
-    u.detail.textContent=item.type==='app'?'APP VOLUME':item.kind==='bus'?'BUS GAIN':'CHANNEL GAIN';
-    const frac=clamp((item.volume-item.min)/(item.max-item.min),0,1);
-    u.fill.style.height=(frac*100).toFixed(2)+'%';
-    u.knob.style.bottom=(frac*100).toFixed(2)+'%';
+    if(u.title.textContent!==item.name)u.title.textContent=item.name;
+    if(u.subtitle.textContent!==item.subtitle)u.subtitle.textContent=item.subtitle;
+    const detail=item.type==='app'?'APP VOLUME':item.kind==='bus'?'BUS GAIN':'CHANNEL GAIN';
+    if(u.detail.textContent!==detail)u.detail.textContent=detail;
+    updateFaderValue(root,item);
     u.slider.setAttribute('aria-valuemin',item.min);
     u.slider.setAttribute('aria-valuemax',item.max);
     u.slider.setAttribute('aria-valuenow',Math.round(item.volume*10)/10);
@@ -253,10 +273,13 @@
       u.scale.dataset.mode=item.type;
     }
     const lit=Math.round(pct(item.peak)/100*u.levels.length);
-    u.levels.forEach((level,i)=>{
-      level.classList.toggle('lit',i<lit);
-      level.classList.toggle('warning',i>20);
-    });
+    if(root._lastLit!==lit){
+      u.levels.forEach((level,i)=>{
+        level.classList.toggle('lit',i<lit);
+        level.classList.toggle('warning',i>20);
+      });
+      root._lastLit=lit;
+    }
     u.mute.setAttribute('aria-pressed',String(item.muted));
     u.mute.querySelector('span').textContent=item.muted?'UNMUTE':'MUTE';
     u.meta.textContent=item.type==='app'?item.id.toUpperCase():item.id.toUpperCase();
@@ -271,9 +294,14 @@
       let card=client.cards.get(key);
       if(!card){card=createCard(item);client.cards.set(key,card);}
       if(card.parentNode!==channels)channels.append(card);
-      if(card._dragging){
-        // Keep finger position stable while asynchronous status updates arrive.
-        const local=card._item;item.volume=local.volume;
+      if(card._dragging||card._heldUntil>performance.now()){
+        // Keep the finger position stable; ignore stale server responses.
+        const local=card._item;
+        if(local){
+          const close=Math.abs(item.volume-local.volume)<(item.type==='app'?0.6:0.15);
+          if(!card._dragging&&close)card._heldUntil=0;
+          else item.volume=local.volume;
+        }
       }
       updateCard(card,item);
     }
