@@ -12,7 +12,25 @@ on:
 permissions:
   contents: write
 jobs:
+  windows-powershell-syntax:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse bridge.ps1 with Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $file = Join-Path $env:GITHUB_WORKSPACE 'com.noobatwork.voicemeeter.sdPlugin\bridge.ps1'
+          $tokens = $null
+          $parseErrors = $null
+          $ast = [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$tokens, [ref]$parseErrors)
+          if (-not $ast -or $parseErrors.Count -gt 0) {
+            foreach ($err in $parseErrors) { Write-Error ($err.ToString()) }
+            throw "Invalid Windows PowerShell bridge syntax"
+          }
+          Write-Host "Windows PowerShell bridge syntax verified."
   alpha:
+    needs: windows-powershell-syntax
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +68,7 @@ jobs:
           for p in references:
               assert (root.parent/(p+'.png')).is_file(),f"Missing icon: {p}"
               assert (root.parent/(p+'@2x.png')).is_file(),f"Missing @2x icon: {p}"
-          assert m['Version']=='0.3.0.0'
+          assert m['Version']=='0.3.1.0'
           assert m['PropertyInspectorPath']=='settings.html'
           assert (root.parent/'settings.html').is_file()
           assert (root.parent/'settings.js').is_file()
@@ -72,7 +90,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           from zipfile import ZipFile,ZIP_DEFLATED
-          with ZipFile('NoobatWork-Voicemeeter-Control-v0.3.0-alpha.zip','w',ZIP_DEFLATED) as z:
+          with ZipFile('NoobatWork-Voicemeeter-Control-v0.3.1-alpha.zip','w',ZIP_DEFLATED) as z:
               for f in Path('com.noobatwork.voicemeeter.sdPlugin').rglob('*'):
                   if f.is_file():z.write(f)
               for name in ('INSTALL.ps1','INSTALL.bat','README.md','LICENSE'):
@@ -82,5 +100,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view v0.3.0-alpha >/dev/null 2>&1 || gh release create v0.3.0-alpha --prerelease --title "v0.3.0-alpha (experimental)" --notes "Unverified Windows/Stream Deck alpha. Extract ZIP and run INSTALL.bat after closing Stream Deck."
-          gh release upload v0.3.0-alpha NoobatWork-Voicemeeter-Control-v0.3.0-alpha.zip --clobber
+          gh release view v0.3.1-alpha >/dev/null 2>&1 || gh release create v0.3.1-alpha --prerelease --title "v0.3.1-alpha (experimental)" --notes "Unverified Windows/Stream Deck alpha. Extract ZIP and run INSTALL.bat after closing Stream Deck."
+          gh release upload v0.3.1-alpha NoobatWork-Voicemeeter-Control-v0.3.1-alpha.zip --clobber
