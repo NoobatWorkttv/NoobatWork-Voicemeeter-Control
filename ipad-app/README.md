@@ -6,7 +6,7 @@ The goal is the **first approved dark seven-channel mockup**: proper touch-dragg
 
 ## Windows setup (Windows 10/11 x64)
 
-1. Download **NoobatWork-iPad-Mixer-v0.1.0-preview-Setup.exe** from the official GitHub release.
+1. Download **NoobatWork-iPad-Mixer-v0.1.1-preview-Setup.exe** from the official GitHub release.
 2. Run Setup.exe. It installs under your Windows user account. No .NET SDK or Node installation required.
 3. Start **NoobatWork Audio Mixer – iPad Edition** from the Windows Start menu (or launch it at the end of Setup).
 4. **Leave the console window open.** It prints a LAN address (such as `http://192.168.1.85:8876/`) and a *fresh six-digit pairing code*.
@@ -45,6 +45,15 @@ Download the GitHub ZIP, extract **every file** and run `NoobatWork-iPad-Mixer.e
 - **Voicemeeter offline:** Start Voicemeeter Potato. The app mixer works separately.
 - **Controller not updating:** If the connection drops briefly, it should reconnect automatically.
 - **Device lost/uncoupled:** Click the sign-out symbol and pair again. The companion stores a device token at `%APPDATA%\NoobatWork\iPadMixer\pair-token.txt`.
+
+### What's different in 0.1.1 — Fader latency fix
+
+- Finger drags use a minimal, immediate local visual update instead of rebuilding icons/meters/labels at every pointer event.
+- Expensive per-app Windows audio scans are **not** performed for each gain command in this iPad build.
+- The Windows companion keeps only the last pending gain value per channel, drops redundant intermediate points, and forwards changes frequently.
+- A backend status arriving while dragging (or just after finger release) cannot make the fader jump backwards to an older volume value.
+- Windows sends audio status around 3x per second; the audio-command dispatch is independent of those full scans.
+- Existing Windows pairing remains intact and the independently tested Stream Deck plugin is not modified.
 
 **MVP / preview status:** Real working server and UI compiled and testable on Windows, but not yet tested on your physical iPad. Current release supports volume, mute, master A1 and live meters; configurable routing, rearrangeable channel presets, tray auto-start and HTTPS are planned improvements.
 
