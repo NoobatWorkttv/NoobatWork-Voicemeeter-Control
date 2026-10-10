@@ -1,0 +1,55 @@
+name: Build alpha ZIP
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-alpha.yml'
+      - 'com.noobatwork.voicemeeter.sdPlugin/**'
+      - 'INSTALL.ps1'
+      - 'INSTALL.bat'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  alpha:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Stream Deck icon PNG assets
+        shell: python
+        run: |
+          from pathlib import Path
+          import struct,zlib
+          root=Path("com.noobatwork.voicemeeter.sdPlugin/imgs")
+          root.mkdir(parents=True,exist_ok=True)
+          def png(size,color):
+              w=h=size
+              row=b'\x00'+bytes(color)*w
+              raw=row*h
+              def chunk(k,v):return struct.pack('!I',len(v))+k+v+struct.pack('!I',zlib.crc32(k+v)&0xffffffff)
+              return b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',w,h,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw))+chunk(b'IEND',b'')
+          for name,size in [('action',20),('action@2x',40)]:
+              (root/(name+'.png')).write_bytes(png(size,(28,172,160,255)))
+      - name: Validate JS and manifest
+        shell: bash
+        run: |
+          node --check com.noobatwork.voicemeeter.sdPlugin/plugin.js
+          python -m json.tool com.noobatwork.voicemeeter.sdPlugin/manifest.json >/dev/null
+      - name: Create downloadable ZIP
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          with ZipFile('NoobatWork-Voicemeeter-Control-v0.1.0-alpha.zip','w',ZIP_DEFLATED) as z:
+              for f in Path('com.noobatwork.voicemeeter.sdPlugin').rglob('*'):
+                  if f.is_file():z.write(f)
+              for name in ('INSTALL.ps1','INSTALL.bat','README.md','LICENSE'):
+                  z.write(name)
+          PY
+      - name: Publish alpha download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v0.1.0-alpha >/dev/null 2>&1 || gh release create v0.1.0-alpha --prerelease --title "v0.1.0-alpha (experimental)" --notes "Unverified Windows/Stream Deck alpha. Extract ZIP and run INSTALL.bat after closing Stream Deck."
+          gh release upload v0.1.0-alpha NoobatWork-Voicemeeter-Control-v0.1.0-alpha.zip --clobber
