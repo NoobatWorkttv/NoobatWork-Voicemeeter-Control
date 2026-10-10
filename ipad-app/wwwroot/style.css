@@ -87,3 +87,123 @@ button:focus-visible,[role=slider]:focus-visible,input:focus-visible{outline:2px
 @media(max-width:690px){#shell{min-height:520px;gap:9px}.topbar{flex-wrap:wrap;min-height:97px;gap:8px}.identity{min-width:200px}.identity h1{font-size:22px}.status-wrap{min-width:auto}.tab-bar{order:3;flex:1 0 100%;justify-content:stretch}.tab{flex:1}.channel-toolbar{min-height:42px}.live-pill{display:none}.channel{flex-basis:126px}.channel-top{min-height:85px}.master-panel{gap:9px;padding:9px 11px}.master-title{min-width:100px}.master-title strong{font-size:12px}.master-title small{font-size:9px}.master-db{min-width:62px;font-size:13px}.master-mute{padding:9px;font-size:10px}.footline{font-size:8px}}
 @media(max-height:640px){#shell{min-height:0}.topbar{min-height:55px}.identity .logo{height:38px}.identity p{margin-top:2px}.channel-toolbar{min-height:30px}.channel-toolbar p{display:none}.channel-top{min-height:65px}.channel-icon{height:32px;width:32px;font-size:16px}.channel-reading{min-height:47px}.fader-area{min-height:95px}.master-panel{min-height:58px}.channel-meta{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0ms!important;transition-duration:0ms!important}}
+
+
+/* v0.1.2 – user-selectable layouts. Each browser stores its own preference,
+   allowing iPad #1 = Split and iPad/Android #2 = Full simultaneously. */
+.layout-chooser{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.layout-chooser label{font-size:10px;font-weight:800;letter-spacing:.6px;color:#9db4cb}
+.layout-chooser select{appearance:none;-webkit-appearance:none;color:#e6f4ff;border:1px solid #34546c;background:#172b40;border-radius:10px;padding:11px 20px 11px 11px;font-size:12px;font-weight:700;min-width:108px;max-width:155px}
+.toolbar-actions{display:flex;gap:9px;align-items:center}
+.edit-favorites{padding:9px 11px;background:#1b3449;border:1px solid #42617b;border-radius:10px;color:#bcd4e8;font-size:11px;font-weight:700;white-space:nowrap}
+.edit-favorites[aria-pressed="true"]{color:#fce29a;background:#3b3541;border-color:#79613e}
+.fav-tools{display:flex;align-items:center;justify-content:center;gap:5px;min-height:35px}
+.fav-tools[hidden]{display:none!important}
+.fav-tools button{border:1px solid #3f5971;border-radius:8px;background:#1d3346;color:#d6e5f2;font-size:18px;min-width:28px;min-height:32px;font-weight:800}
+.fav-tools .fav-toggle{flex:1;color:#a3b3c9}
+.fav-tools .fav-toggle.pinned{color:#ffd66f;background:#3a3443}
+.fav-tools button:disabled{opacity:.25}
+@media(min-width:691px) and (max-width:1100px){
+ .layout-chooser label{display:none}
+ .layout-chooser select{min-width:90px;max-width:132px}
+ .tab{min-width:55px}
+ .identity{min-width:190px}
+}
+/* Split layout applies automatically when iPadOS gives Safari <710px or
+   explicitly whenever the user chooses Split-Screen. */
+@media(max-width:710px){
+ html:not([data-layout="full"]) #shell{min-height:0}
+ html:not([data-layout="full"]) .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"identity status" "tabs layout";gap:7px;min-height:0}
+ html:not([data-layout="full"]) .identity{grid-area:identity;min-width:0}
+ html:not([data-layout="full"]) .status-wrap{grid-area:status;min-width:0}
+ html:not([data-layout="full"]) .tab-bar{grid-area:tabs;order:0;flex:initial;min-width:0}
+ html:not([data-layout="full"]) .layout-chooser{grid-area:layout}
+}
+html[data-layout="split"] #shell{min-height:0}
+html[data-layout="split"] .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"identity status" "tabs layout";gap:7px;min-height:0}
+html[data-layout="split"] .identity{grid-area:identity;min-width:0}
+html[data-layout="split"] .status-wrap{grid-area:status;min-width:0}
+html[data-layout="split"] .tab-bar{grid-area:tabs;order:0;flex:initial;min-width:0}
+html[data-layout="split"] .layout-chooser{grid-area:layout}
+@media(max-width:710px){
+ html:not([data-layout="full"]) .identity h1{font-size:17px}
+ html:not([data-layout="full"]) .identity p{display:none}
+ html:not([data-layout="full"]) .logo{height:30px;width:26px;gap:2px}
+ html:not([data-layout="full"]) .logo span{width:3px;transform:scaleY(.7)}
+ html:not([data-layout="full"]) .status-wrap #connection{display:none}
+ html:not([data-layout="full"]) .status-wrap{gap:7px}
+ html:not([data-layout="full"]) .tab-bar{justify-self:stretch;margin:0}
+ html:not([data-layout="full"]) .tab{min-width:0;padding:8px 9px;font-size:11px}
+ html:not([data-layout="full"]) .layout-chooser label{display:none}
+ html:not([data-layout="full"]) .layout-chooser select{min-width:104px;max-width:130px;padding:9px 11px;font-size:11px}
+ html:not([data-layout="full"]) .channel-toolbar{min-height:34px}
+ html:not([data-layout="full"]) .channel-toolbar h2{font-size:13px}
+ html:not([data-layout="full"]) .channel-toolbar p{display:none}
+ html:not([data-layout="full"]) .edit-favorites{padding:7px;font-size:10px}
+ html:not([data-layout="full"]) .channels{gap:7px;padding-bottom:6px}
+ html:not([data-layout="full"]) .channel{flex-basis:113px;padding:9px 7px 8px;border-radius:12px;gap:6px}
+ html:not([data-layout="full"]) .channel-top{min-height:67px;gap:3px}
+ html:not([data-layout="full"]) .channel-icon{height:29px;width:29px;border-radius:8px;font-size:14px}
+ html:not([data-layout="full"]) .channel-title{font-size:11px}
+ html:not([data-layout="full"]) .channel-subtitle{font-size:9px}
+ html:not([data-layout="full"]) .channel-reading{min-height:41px;border-radius:9px}
+ html:not([data-layout="full"]) .channel-reading strong{font-size:17px}
+ html:not([data-layout="full"]) .channel-reading strong small{font-size:10px}
+ html:not([data-layout="full"]) .channel-reading em{font-size:8px}
+ html:not([data-layout="full"]) .fader-area{gap:6px;padding:0}
+ html:not([data-layout="full"]) .fader-hit{width:43px}
+ html:not([data-layout="full"]) .fader-scale{width:24px;font-size:8px}
+ html:not([data-layout="full"]) .fader-knob{width:40px}
+ html:not([data-layout="full"]) .mute-btn{min-height:44px}
+ html:not([data-layout="full"]) .channel-meta{display:none}
+ html:not([data-layout="full"]) .master-panel{min-height:55px;gap:6px;padding:7px 9px;border-radius:10px}
+ html:not([data-layout="full"]) .master-title{min-width:78px}
+ html:not([data-layout="full"]) .master-title strong{font-size:11px}
+ html:not([data-layout="full"]) .master-title small{font-size:8px}
+ html:not([data-layout="full"]) .master-db{min-width:47px;font-size:10px}
+ html:not([data-layout="full"]) .master-mute{padding:9px 7px;min-height:39px}
+ html:not([data-layout="full"]) .footline{display:none}
+}
+html[data-layout="split"] .identity h1{font-size:17px}
+html[data-layout="split"] .identity p{display:none}
+html[data-layout="split"] .logo{height:30px;width:26px;gap:2px}
+html[data-layout="split"] .logo span{width:3px;transform:scaleY(.7)}
+html[data-layout="split"] .status-wrap #connection{display:none}
+html[data-layout="split"] .tab-bar{justify-self:stretch;margin:0}
+html[data-layout="split"] .tab{min-width:0;padding:8px 9px;font-size:11px}
+html[data-layout="split"] .layout-chooser label{display:none}
+html[data-layout="split"] .layout-chooser select{min-width:104px;max-width:130px;padding:9px 11px;font-size:11px}
+html[data-layout="split"] .channel-toolbar{min-height:34px}
+html[data-layout="split"] .channel-toolbar h2{font-size:13px}
+html[data-layout="split"] .channel-toolbar p{display:none}
+html[data-layout="split"] .edit-favorites{padding:7px;font-size:10px}
+html[data-layout="split"] .channels{gap:7px;padding-bottom:6px}
+html[data-layout="split"] .channel{flex-basis:113px;padding:9px 7px 8px;border-radius:12px;gap:6px}
+html[data-layout="split"] .channel-top{min-height:67px;gap:3px}
+html[data-layout="split"] .channel-icon{height:29px;width:29px;border-radius:8px;font-size:14px}
+html[data-layout="split"] .channel-title{font-size:11px}
+html[data-layout="split"] .channel-subtitle{font-size:9px}
+html[data-layout="split"] .channel-reading{min-height:41px;border-radius:9px}
+html[data-layout="split"] .channel-reading strong{font-size:17px}
+html[data-layout="split"] .channel-reading em{font-size:8px}
+html[data-layout="split"] .fader-area{gap:6px;padding:0}
+html[data-layout="split"] .fader-hit{width:43px}
+html[data-layout="split"] .fader-scale{width:24px;font-size:8px}
+html[data-layout="split"] .fader-knob{width:40px}
+html[data-layout="split"] .mute-btn{min-height:44px}
+html[data-layout="split"] .channel-meta{display:none}
+html[data-layout="split"] .master-panel{min-height:55px;gap:6px;padding:7px 9px;border-radius:10px}
+html[data-layout="split"] .master-title{min-width:78px}
+html[data-layout="split"] .master-title strong{font-size:11px}
+html[data-layout="split"] .master-title small{font-size:8px}
+html[data-layout="split"] .master-db{min-width:47px;font-size:10px}
+html[data-layout="split"] .master-mute{padding:9px 7px;min-height:39px}
+html[data-layout="split"] .footline{display:none}
+html[data-layout="full"] .channel{flex-basis:clamp(138px,13.5vw,191px)}
+/* Very narrow floating and Stage Manager windows get two usable strips instead
+   of microscopic keys. */
+@media(max-width:420px){
+ html:not([data-layout="full"]) .channel{flex-basis:118px}
+ html:not([data-layout="full"]) .tab{padding:8px 5px}
+ html:not([data-layout="full"]) .layout-chooser select{min-width:94px}
+}
