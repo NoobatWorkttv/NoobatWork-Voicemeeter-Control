@@ -2,11 +2,24 @@
 
 Open-Source Stream Deck Plugin für **Voicemeeter Potato** unter Windows – ohne Flask-Server. Auch für **Stream Deck Mobile auf dem iPad**.
 
-> **v0.3.1-alpha (experimentell):** Der bisherige Live-Fader, das Regeln per +/− und das Speichern der Kanalwahl wurden praktisch bestätigt. **Touch-Fader und echte Pegelanzeige sind neu und auf dem iPad / Windows-PC noch nicht praktisch bestätigt. Die erste Version v0.3.0-alpha war wegen eines defekten PowerShell-Bridge-Skripts komplett offline; diese Version repariert das Skript und enthält eine Windows-PowerShell-Syntaxprüfung vor dem Release.**
+> **v0.4.0-alpha (experimentell):** Der bisherige Live-Fader, das Regeln per +/− und das Speichern der Kanalwahl wurden praktisch bestätigt. **Neu ist die Kompakt-Mixer-Taste mit Tippen/Halten/Doppeltippen. Sie ist automatisiert, aber noch nicht auf deinem iPad getestet. Die vorhandenen Aktionen bleiben unverändert.** Die erste Version v0.3.0-alpha war wegen eines defekten PowerShell-Bridge-Skripts komplett offline; diese Version repariert das Skript und enthält eine Windows-PowerShell-Syntaxprüfung vor dem Release.**
 
 ## Download
 
-**[v0.3.1-alpha als ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.3.1-alpha/NoobatWork-Voicemeeter-Control-v0.3.1-alpha.zip)**
+**[v0.4.0-alpha als ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.4.0-alpha/NoobatWork-Voicemeeter-Control-v0.4.0-alpha.zip)**
+
+## NEU: Kompakt-Mixer auf einer einzigen Taste
+
+Statt fünf Segmenttasten kannst du pro Audiokanal jetzt **eine einzige Kachel** verwenden. Lege in Stream Deck die Aktion **Kompakt-Mixer** für Game, Discord, Mikrofon usw. jeweils einmal nebeneinander und wähle pro Taste den gewünschten Voicemeeter-Kanal.
+
+- **Kurz tippen:** +2 dB (oder frei einstellbare Schrittweite).
+- **Gedrückt halten:** nach ca. 520 ms −2 dB, solange gehalten etwa alle 280 ms erneut (begrenzt auf 12 Schritte pro Tastendruck).
+- **Zweimal schnell tippen:** Mute ein/aus (zweiter Tipp innerhalb von 280 ms). Ein einzelner Tipp wird daher mit kurzer Verzögerung ausgeführt.
+- **Auf der Kachel:** Kanalname, dB-Wert, Gain-Balken und echter Signalpegel; Mute färbt die Kachel rosa.
+
+Die Gesten verwenden die offiziellen `keyDown`-/`keyUp`-Ereignisse. **Es ist kein frei ziehbarer Touch-Slider innerhalb einer Taste.** Bitte insbesondere das Loslassen/Halten auf Stream Deck Mobile prüfen.
+
+Die bisherige v0.3.1-alpha ist weiterhin als getestete Rückfallversion verfügbar: [v0.3.1-alpha Release](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/tag/v0.3.1-alpha).
 
 ## Was ist neu?
 
@@ -32,7 +45,7 @@ Mit dem Standardbereich wählen die Tasten **−40, −30, −20, −10 und 0 dB
 - Der **schmale Balken ganz unten** zeigt den aktuellen Audio-Signalpegel (dBFS). Wenn kein Ton läuft, bleibt dieser unten.
 - Bei Mute fällt der Post-Mute-Pegel der Eingänge ab. Bei Bussen kommt das Meter aus dem Output-Level der Voicemeeter API.
 
-## Hotfix v0.3.1-alpha
+## Hotfix v0.4.0-alpha
 
 Das Build von v0.3.0-alpha enthielt durch einen fehlerhaften Code-Patch eine syntaktisch beschädigte `bridge.ps1`. Die erneuerte Bridge baut auf der funktionierenden v0.2.1 auf. Die Audio-Pegelmessung wird isoliert abgefragt und darf Gain/Mute nicht blockieren. GitHub Actions validiert die Skriptsyntax jetzt unter **Windows PowerShell 5.1** und führt erst bei Erfolg die Linux-/Node-Tests und die Paketveröffentlichung aus.
 
