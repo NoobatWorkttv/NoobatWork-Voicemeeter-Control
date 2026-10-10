@@ -1,0 +1,69 @@
+{
+  "UUID": "com.noobatwork.voicemeeter",
+  "Name": "NoobatWork Voicemeeter Control",
+  "Category": "NoobatWork Voicemeeter",
+  "Author": "NoobatWork",
+  "Description": "Voicemeeter gain and mute control for Stream Deck",
+  "Version": "0.1.0.0",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "Nodejs": {
+    "Version": "24"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "CodePath": "plugin.js",
+  "Actions": [
+    {
+      "UUID": "com.noobatwork.voicemeeter.fader",
+      "Name": "Live-Fader",
+      "Tooltip": "Gain display and mute toggle",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/action",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "com.noobatwork.voicemeeter.up",
+      "Name": "Lauter",
+      "Tooltip": "Increase gain",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/action",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "com.noobatwork.voicemeeter.down",
+      "Name": "Leiser",
+      "Tooltip": "Decrease gain",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/action",
+          "ShowTitle": false
+        }
+      ]
+    }
+  ]
+}
