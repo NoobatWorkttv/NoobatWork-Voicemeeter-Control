@@ -2,7 +2,7 @@ from pathlib import Path
 from zipfile import ZipFile,ZIP_DEFLATED
 root=Path('com.noobatwork.voicemeeter.sdPlugin')
 assert (root/'bin/NoobatWorkAudioSessions.exe').is_file()
-name='NoobatWork-Voicemeeter-Control-v0.5.1-alpha.zip'
+name='NoobatWork-Voicemeeter-Control-v0.6.0-alpha.zip'
 with ZipFile(name,'w',ZIP_DEFLATED) as z:
     for p in sorted(root.rglob('*')):
         if p.is_file():z.write(p)
