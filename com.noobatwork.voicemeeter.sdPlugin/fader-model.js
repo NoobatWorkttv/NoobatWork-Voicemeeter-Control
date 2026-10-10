@@ -16,6 +16,7 @@ function normalize(s={}) {
     index,
     label:typeof s.label==='string'?s.label.slice(0,24):'',
     step,
+    muteGesture:s.muteGesture==='tapHold'?'tapHold':'doubleTap',
     segment:clamp(Math.trunc(safeNumber(s.segment,1)),1,5),
     minGain,maxGain
   };
