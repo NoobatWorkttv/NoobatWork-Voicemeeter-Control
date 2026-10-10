@@ -3,8 +3,8 @@
   "Name": "NoobatWork Voicemeeter Control",
   "Category": "NoobatWork Voicemeeter",
   "Author": "NoobatWork",
-  "Description": "Voicemeeter gain and mute control for Stream Deck",
-  "Version": "0.2.1.0",
+  "Description": "Live audio meters, gain/mute and five-key touch fader for Voicemeeter Potato",
+  "Version": "0.3.0.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "7.1"
@@ -54,6 +54,36 @@
       "UUID": "com.noobatwork.voicemeeter.down",
       "Name": "Leiser",
       "Tooltip": "Decrease gain",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "com.noobatwork.voicemeeter.segment",
+      "Name": "Touch-Fader · Segment",
+      "Tooltip": "Set gain to a configured five-key segment; set positions 1–5 in the inspector",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "com.noobatwork.voicemeeter.mute",
+      "Name": "Mute",
+      "Tooltip": "Toggle mute for selected Voicemeeter strip or bus",
       "Icon": "imgs/action",
       "Controllers": [
         "Keypad"
