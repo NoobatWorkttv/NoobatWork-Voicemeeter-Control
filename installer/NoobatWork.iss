@@ -1,4 +1,4 @@
-#define AppVer "0.5.0-alpha"
+#define AppVer "0.5.1-alpha"
 [Setup]
 AppId={{F4B923AF-8929-46BC-940D-27A014A75638}
 AppName=NoobatWork Voicemeeter Control
@@ -12,7 +12,7 @@ DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 SourceDir=..
 OutputDir=dist
-OutputBaseFilename=NoobatWork-Voicemeeter-Control-v0.5.0-alpha-Setup
+OutputBaseFilename=NoobatWork-Voicemeeter-Control-v0.5.1-alpha-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
