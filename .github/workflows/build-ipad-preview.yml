@@ -1,0 +1,103 @@
+name: Build iPad Audio Mixer LAN Preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ipad-app/**'
+      - '.github/workflows/build-ipad-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: ipad-preview-release
+  cancel-in-progress: true
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile existing isolated NAudio session helper
+        shell: pwsh
+        run: |
+          dotnet publish windows-audio/NoobatWorkAudioSessions.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ipad-app/publish/bin
+          if ($LASTEXITCODE -ne 0) { throw 'NAudio helper compilation failed' }
+      - name: Compile standalone iPad LAN companion (ASP.NET Core)
+        shell: pwsh
+        run: |
+          dotnet publish ipad-app/NoobatWork.iPad.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ipad-app/publish
+          if ($LASTEXITCODE -ne 0) { throw 'iPad companion compilation failed' }
+          New-Item -ItemType Directory -Force -Path ipad-app/publish/bin | Out-Null
+          Copy-Item com.noobatwork.voicemeeter.sdPlugin/bridge.ps1 ipad-app/publish/bin/bridge.ps1
+          foreach ($file in @('NoobatWork-iPad-Mixer.exe','bin/NoobatWorkAudioSessions.exe','bin/bridge.ps1','wwwroot/index.html','wwwroot/style.css','wwwroot/app.js')) {
+            if (-not(Test-Path (Join-Path 'ipad-app/publish' $file))) { throw "Missing published app file: $file" }
+          }
+      - name: Validate browser UI JavaScript and offline assets
+        shell: bash
+        run: |
+          node --check ipad-app/wwwroot/app.js
+          node --check ipad-app/tests/smoke.cjs
+          if grep -R -E 'googleapis|jsdelivr|unpkg|cdnjs|<script[[:space:]]+src="https' ipad-app/wwwroot; then
+            echo "Unexpected external CDN dependency" >&2
+            exit 1
+          fi
+      - name: Test local HTTP, pairing and authenticated live WebSocket
+        shell: pwsh
+        run: |
+          $env:APPDATA = Join-Path $env:RUNNER_TEMP 'NoobatWork-iPad-Smoke'
+          New-Item -ItemType Directory -Force -Path $env:APPDATA | Out-Null
+          $env:NAW_SERVER_LOG = Join-Path $env:RUNNER_TEMP 'naw-ipad-console.log'
+          $errorLog = Join-Path $env:RUNNER_TEMP 'naw-ipad-errors.log'
+          $exe = (Resolve-Path 'ipad-app/publish/NoobatWork-iPad-Mixer.exe').Path
+          $process = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -PassThru -RedirectStandardOutput $env:NAW_SERVER_LOG -RedirectStandardError $errorLog
+          try {
+            $online = $false
+            for($i=0;$i -lt 40;$i++){
+              if($process.HasExited){ throw "iPad companion exited before startup. $([IO.File]::ReadAllText($errorLog))" }
+              try {
+                $response = Invoke-WebRequest 'http://127.0.0.1:8876/' -UseBasicParsing -TimeoutSec 2
+                if($response.StatusCode -eq 200){$online=$true;break}
+              } catch { }
+              Start-Sleep -Milliseconds 500
+            }
+            if(-not $online){throw "iPad HTTP server did not start. $([IO.File]::ReadAllText($errorLog))"}
+            node ipad-app/tests/smoke.cjs
+            if($LASTEXITCODE -ne 0){throw 'iPad HTTP/Pairing/WebSocket smoke test failed'}
+          }
+          finally {
+            if(-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+          }
+      - name: Package Windows portable ZIP
+        shell: bash
+        run: python ipad-app/tools/package.py
+      - name: Install Inno Setup compiler
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup compiler missing' }
+      - name: Build Windows Setup.exe
+        shell: pwsh
+        run: |
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { throw 'ISCC.exe not available' }
+          & $iscc 'ipad-app/installer/NoobatWork-iPad.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed' }
+          $installer = Get-ChildItem -Path ipad-app -Recurse -File -Filter 'NoobatWork-iPad-Mixer-v0.1.0-preview-Setup.exe' | Select-Object -First 1
+          if (-not $installer) { throw 'Missing Setup.exe output' }
+          Copy-Item -LiteralPath $installer.FullName -Destination 'NoobatWork-iPad-Mixer-v0.1.0-preview-Setup.exe'
+      - name: Publish separate iPad Preview release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'v0.1.0-ipad-preview'
+          $existing = @(gh release list --limit 100 --json tagName | ConvertFrom-Json | Where-Object { $_.tagName -eq $tag })
+          if ($LASTEXITCODE -ne 0) { throw 'Could not query releases' }
+          if($existing.Count -eq 0) {
+            gh release create $tag --prerelease --title 'iPad Edition v0.1.0 – LAN Mixer Preview' --notes 'Separate Windows companion with genuine iPad touch-fader web mixer, Windows audio session control, Voicemeeter channels, live meters and private-LAN code pairing. Preview: requires physical iPad test and trusted LAN. Stream Deck v0.6.0 remains untouched.'
+            if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
+          }
+          gh release upload $tag 'NoobatWork-iPad-Mixer-v0.1.0-preview-Setup.exe' 'NoobatWork-iPad-Mixer-v0.1.0-preview.zip' --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Release asset upload failed' }
