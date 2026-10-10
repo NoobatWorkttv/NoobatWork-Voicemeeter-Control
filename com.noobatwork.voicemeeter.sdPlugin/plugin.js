@@ -2,6 +2,7 @@
 const {spawn}=require('node:child_process');
 const {join}=require('node:path');
 const model=require('./fader-model.js');
+const {renderTile}=require('./tile-renderer.js');
 const {createCompactGestures}=require('./compact-gestures.js');
 const args=process.argv.slice(2);
 function arg(name){const i=args.indexOf(name);return i<0?null:args[i+1];}
@@ -51,25 +52,15 @@ function pollAppBridge(){
 }
 function renderApplication(ctx,item){
  const id=String(item.settings?.appId||'').toLowerCase();
- const data=apps.get(id),saved=item.settings||{};
- const label=esc(String(saved.label||data?.name||id||'App auswählen').slice(0,22));
- const volume=typeof data?.volume==='number'?data.volume:0;
- const level=Math.max(0,Math.min(100,Math.round(volume*100)));
- const mute=!!data?.mute;
- const mode=saved.muteGesture==='tapHold'?'tapHold':'doubleTap';
- const active=appReady&&!!data;
- const color=mute?'#fb7185':'#2dd4b6';
- const body=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">',
- '<rect width="144" height="144" fill="#101a2b"/>',
- '<text x="72" y="21" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="13" fill="#f0f5fa">'+label+'</text>',
- '<rect x="12" y="31" width="120" height="75" rx="12" fill="#25384c"/>',
- '<text x="72" y="71" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="30" fill="'+color+'">'+(active?(mute?'MUTE':level+'%'):'OFFLINE')+'</text>',
- '<text x="72" y="93" text-anchor="middle" font-family="Arial" font-size="10" fill="#b4cbd3">TAP +  |  HOLD −</text>',
- '<rect x="15" y="114" width="114" height="10" rx="4" fill="#3a5260"/>',
- '<rect x="15" y="114" width="'+(114*level/100)+'" height="10" rx="4" fill="'+color+'"/>',
- '<text x="72" y="139" text-anchor="middle" font-family="Arial" font-size="9" fill="#c7d5e5">'+(mode==='tapHold'?'TAP + HOLD = MUTE':'2× TIP = MUTE')+'</text></svg>'];
- const image='data:image/svg+xml,'+encodeURIComponent(body.join(''));
- if(lastImage.get(ctx)!==image){lastImage.set(ctx,image);send({event:'setImage',context:ctx,payload:{image,target:0}});}
+ const a=apps.get(id),settings=item.settings||{};
+ const image=renderTile({
+   kind:'app',action:'app',label:settings.label||a?.name||id||'App wählen',
+   settings,volume:a?.volume??0,meter:a?.peak??0,mute:!!a?.mute,
+   online:appReady&&!!a,icon:a?.icon||null
+ });
+ if(lastImage.get(ctx)===image)return;
+ lastImage.set(ctx,image);
+ send({event:'setImage',context:ctx,payload:{image,target:0}});
 }
 
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
@@ -77,56 +68,17 @@ function send(obj){if(ws?.readyState===1)ws.send(JSON.stringify(obj));}
 function bridge(obj){if(child?.stdin?.writable)child.stdin.write(JSON.stringify(obj)+'\n');}
 function gainText(g){return Number.isFinite(g)?g.toFixed(1)+' dB':'-- dB';}
 function makeImage(action,s,base){
- const title=esc(s.label||model.defaultLabel(s));
- const gotGain=cache.has(base+'.Gain');
- const gain=gotGain?cache.get(base+'.Gain'):-60;
- const mute=cache.get(base+'.Mute')===1;
- const mp=model.meterPercent(meters.get(base)||0);
- const gp=model.gainPercent(gain);
- const valid=online&&gotGain;
- const status=!online?'OFFLINE':!gotGain?'-- dB':mute?'MUTED':gainText(gain);
- const compact=action.endsWith('.compact');
- const mode=s.muteGesture==='tapHold'?'tapHold':'doubleTap';
- const muteAction=action.endsWith('.mute');
- const segment=action.endsWith('.segment');
- const activeSegment=valid&&gain>=model.segmentGain(s)-.1;
- const c=mute?'#fa7189':'#22c7a9';
- const parts=[
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">',
-  '<rect width="144" height="144" fill="#101a2b"/>',
-  '<text x="72" y="21" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="bold" fill="#f0f5fa">'+title+'</text>'
- ];
- if(compact){
-   const db=valid?gainText(gain):'OFFLINE';
-   const tint=mute?'#fb7185':'#eafbf7';
-   parts.push('<rect x="10" y="29" width="124" height="68" rx="11" fill="#1f3540"/>');
-   parts.push('<text x="72" y="61" text-anchor="middle" font-family="Arial" font-size="27" font-weight="bold" fill="'+tint+'">'+(mute?'MUTE':db)+'</text>');
-   parts.push('<text x="72" y="80" text-anchor="middle" font-family="Arial" font-size="10" fill="#b5e9df">TAP +  |  HOLD −</text>');
-   parts.push('<rect x="14" y="98" width="116" height="9" rx="3" fill="#38495b"/>');
-   parts.push('<rect x="14" y="98" width="'+(116*gp/100)+'" height="9" rx="3" fill="'+c+'"/>');
-   parts.push('<text x="72" y="117" text-anchor="middle" font-size="9" font-family="Arial" fill="#c7d5e5">'+(mode==='tapHold'?'TAP + HOLD · MUTE':'FADER · 2× MUTE')+'</text>');
- }else if(segment){
-   const target=model.segmentGain(s);
-   parts.push('<rect x="14" y="34" width="116" height="65" rx="12" stroke="'+(activeSegment?c:'#566476')+'" stroke-width="3" fill="'+(activeSegment?'#225b58':'#253044')+'"/>');
-   parts.push('<text x="72" y="57" text-anchor="middle" font-size="12" fill="#dce6f3" font-family="Arial">'+s.segment+' / 5</text>');
-   parts.push('<text x="72" y="82" text-anchor="middle" font-size="21" font-weight="bold" font-family="Arial" fill="'+(activeSegment?'#f6ffff':'#a6bacd')+'">'+target.toFixed(0)+' dB</text>');
- }else if(muteAction){
-   parts.push('<rect x="18" y="34" width="108" height="65" rx="14" fill="'+(mute?'#9b2d50':'#235b56')+'"/>');
-   parts.push('<text x="72" y="73" text-anchor="middle" font-family="Arial" font-size="19" font-weight="bold" fill="#fff">'+(mute?'MUTED':'MUTE')+'</text>');
- }else if(action.endsWith('.up')||action.endsWith('.down')){
-   const up=action.endsWith('.up');
-   parts.push('<text x="72" y="89" text-anchor="middle" font-family="Arial" font-size="65" font-weight="bold" fill="'+c+'">'+(up?'+':'−')+'</text>');
- }else{
-   parts.push('<rect x="61" y="31" width="22" height="69" rx="4" fill="#465365"/>');
-   parts.push('<rect x="61" y="'+(100-gp*.69)+'" width="22" height="'+(gp*.69)+'" rx="4" fill="'+c+'"/>');
-   parts.push('<rect x="47" y="'+(100-gp*.69-4)+'" width="50" height="8" rx="3" fill="#e1f0f6"/>');
- }
- if(!compact)parts.push('<text x="72" y="116" text-anchor="middle" font-size="12" font-family="Arial" fill="#e5edf6">'+status+'</text>');
- // True signal meter (post-mute for strips, output for buses). It is NOT the gain indicator.
- parts.push('<rect x="14" y="123" width="116" height="9" rx="3" fill="#384456"/>');
- parts.push('<rect x="14" y="123" width="'+(116*mp/100)+'" height="9" rx="3" fill="'+(mp>90?'#fbbe55':'#39cbac')+'"/>');
- parts.push('</svg>');
- return 'data:image/svg+xml,'+encodeURIComponent(parts.join(''));
+ const gain=cache.get(base+'.Gain');
+ const image=renderTile({
+   kind:'channel',action:action.split('.').at(-1),
+   label:s.label||model.defaultLabel(s),settings:s,
+   gain:Number.isFinite(gain)?gain:0,
+   mute:cache.get(base+'.Mute')===1,
+   meter:model.meterPercent(meters.get(base)||0),
+   online:online&&Number.isFinite(gain),
+   segment:model.segmentGain(s)
+ });
+ return image;
 }
 function paint(ctx,item){
  if(item.action.endsWith('.app')){renderApplication(ctx,item);return;}
