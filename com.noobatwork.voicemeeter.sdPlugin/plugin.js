@@ -9,6 +9,68 @@ const port=arg('-port'),uuid=arg('-pluginUUID'),registration=arg('-registerEvent
 if(!port||!uuid||!registration)process.exit(1);
 let ws,child,buffer='',online=false,busy=false;
 const active=new Map(),cache=new Map(),meters=new Map(),lastImage=new Map();
+// Windows application audio is completely separate from the Voicemeeter bridge.
+let appProcess=null,appBuffer='',appReady=false;
+const apps=new Map();
+function tellInspector(ctx){
+  send({event:'sendToPropertyInspector',context:ctx,payload:{
+    type:'app-list',apps:[...apps.values()].sort((a,b)=>a.name.localeCompare(b.name))
+  }});
+}
+function startAppBridge(){
+  if(appProcess)return;
+  const exe=join(__dirname,'bin','NoobatWorkAudioSessions.exe');
+  const proc=spawn(exe,[],{windowsHide:true,stdio:['pipe','pipe','pipe']});
+  appProcess=proc;appBuffer='';appReady=false;
+  proc.stdout.setEncoding('utf8');
+  proc.stdout.on('data',part=>{
+    appBuffer+=part;
+    if(appBuffer.length>1000000)appBuffer='';
+    let at;
+    while((at=appBuffer.indexOf('\n'))>=0){
+      const line=appBuffer.slice(0,at);appBuffer=appBuffer.slice(at+1);
+      try{
+        const msg=JSON.parse(line);
+        if(msg.type==='apps'&&Array.isArray(msg.apps)){
+          appReady=true;
+          apps.clear();
+          for(const a of msg.apps)if(typeof a.id==='string'&&a.id.endsWith('.exe'))apps.set(a.id,a);
+          for(const [ctx,item] of active)if(item.action.endsWith('.app')){paint(ctx,item);tellInspector(ctx);}
+        }
+      }catch{}
+    }
+  });
+  proc.on('error',()=>{if(appProcess===proc){appReady=false;appProcess=null;apps.clear();render();}});
+  proc.on('exit',()=>{if(appProcess===proc){appReady=false;appProcess=null;apps.clear();render();}});
+}
+function appCommand(cmd){if(appProcess?.stdin?.writable)appProcess.stdin.write(JSON.stringify(cmd)+'\n');}
+function pollAppBridge(){
+  if(![...active.values()].some(x=>x.action.endsWith('.app')))return;
+  if(!appProcess)startAppBridge();
+  appCommand({op:'list'});
+}
+function renderApplication(ctx,item){
+ const id=String(item.settings?.appId||'').toLowerCase();
+ const data=apps.get(id),saved=item.settings||{};
+ const label=esc(String(saved.label||data?.name||id||'App auswählen').slice(0,22));
+ const volume=typeof data?.volume==='number'?data.volume:0;
+ const level=Math.max(0,Math.min(100,Math.round(volume*100)));
+ const mute=!!data?.mute;
+ const active=appReady&&!!data;
+ const color=mute?'#fb7185':'#2dd4b6';
+ const body=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">',
+ '<rect width="144" height="144" fill="#101a2b"/>',
+ '<text x="72" y="21" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="13" fill="#f0f5fa">'+label+'</text>',
+ '<rect x="12" y="31" width="120" height="75" rx="12" fill="#25384c"/>',
+ '<text x="72" y="71" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="30" fill="'+color+'">'+(active?(mute?'MUTE':level+'%'):'OFFLINE')+'</text>',
+ '<text x="72" y="93" text-anchor="middle" font-family="Arial" font-size="10" fill="#b4cbd3">TAP +  |  HOLD −</text>',
+ '<rect x="15" y="114" width="114" height="10" rx="4" fill="#3a5260"/>',
+ '<rect x="15" y="114" width="'+(114*level/100)+'" height="10" rx="4" fill="'+color+'"/>',
+ '<text x="72" y="139" text-anchor="middle" font-family="Arial" font-size="9" fill="#c7d5e5">2× TIP = MUTE</text></svg>'];
+ const image='data:image/svg+xml,'+encodeURIComponent(body.join(''));
+ if(lastImage.get(ctx)!==image){lastImage.set(ctx,image);send({event:'setImage',context:ctx,payload:{image,target:0}});}
+}
+
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 function send(obj){if(ws?.readyState===1)ws.send(JSON.stringify(obj));}
 function bridge(obj){if(child?.stdin?.writable)child.stdin.write(JSON.stringify(obj)+'\n');}
@@ -65,6 +127,7 @@ function makeImage(action,s,base){
  return 'data:image/svg+xml,'+encodeURIComponent(parts.join(''));
 }
 function paint(ctx,item){
+ if(item.action.endsWith('.app')){renderApplication(ctx,item);return;}
  const s=model.normalize(item.settings),base=model.channel(s);
  const url=makeImage(item.action,s,base);
  if(lastImage.get(ctx)===url)return;
@@ -104,6 +167,7 @@ function poll(){
  if(!child){startBridge();return;}
  const unique=new Map();
  for(const item of active.values()){
+   if(item.action.endsWith('.app'))continue;
    const s=model.normalize(item.settings);
    unique.set(model.channel(s),s);
  }
@@ -124,7 +188,18 @@ function setParam(path,value){
 }
 function compactGesture(ctx,gesture){
  const entry=active.get(ctx);
- if(!entry||!online)return;
+ if(!entry)return;
+ if(entry.action.endsWith('.app')){
+   const id=String(entry.settings?.appId||'').toLowerCase(),current=apps.get(id);
+   if(!current)return;
+   if(gesture==='mute')appCommand({op:'mute',app:id,value:!current.mute});
+   else{
+     const step=model.normalize(entry.settings).step/100;
+     appCommand({op:'adjust',app:id,delta:gesture==='increase'?step:-step});
+   }
+   return;
+ }
+ if(!online)return;
  const s=model.normalize(entry.settings),base=model.channel(s);
  if(gesture==='mute'){
    const previous=cache.get(base+'.Mute')||0;
@@ -140,7 +215,9 @@ function compactGesture(ctx,gesture){
 const compactGestures=createCompactGestures(compactGesture);
 function keyDown(message){
  const entry=active.get(message.context);
- if(!entry||!online)return;
+ if(!entry)return;
+ if(message.action.endsWith('.app')){compactGestures.down(message.context);return;}
+ if(!online)return;
  if(message.action.endsWith('.compact')){compactGestures.down(message.context);return;}
  const s=model.normalize(entry.settings),base=model.channel(s);
  const gain=cache.get(base+'.Gain'),mute=cache.get(base+'.Mute')||0;
@@ -160,7 +237,9 @@ ws.onmessage=e=>{
  let m;try{m=JSON.parse(e.data);}catch{return;}
  if(m.event==='willAppear'){
    active.set(m.context,{action:m.action,settings:m.payload?.settings||{}});
-   paint(m.context,active.get(m.context));poll();
+   paint(m.context,active.get(m.context));
+   if(m.action.endsWith('.app'))pollAppBridge();
+   else poll();
  }else if(m.event==='willDisappear'){
    compactGestures.clear(m.context);
    active.delete(m.context);lastImage.delete(m.context);
@@ -172,8 +251,11 @@ ws.onmessage=e=>{
      lastImage.delete(m.context);render();poll();
      send({event:'sendToPropertyInspector',context:m.context,payload:{type:'settings-confirmed',settings:updated}});
    }
+ }else if(m.event==='sendToPlugin'&&m.payload?.op==='list-apps'){
+   pollAppBridge();tellInspector(m.context);
  }else if(m.event==='keyDown')keyDown(m);
- else if(m.event==='keyUp'&&m.action.endsWith('.compact'))compactGestures.up(m.context);
+ else if(m.event==='keyUp'&&(m.action.endsWith('.compact')||m.action.endsWith('.app')))compactGestures.up(m.context);
 };
-ws.onclose=()=>{compactGestures.clearAll();child?.kill();process.exit(0);};
+ws.onclose=()=>{compactGestures.clearAll();child?.kill();appProcess?.kill();process.exit(0);};
 setInterval(poll,350);
+setInterval(pollAppBridge,1500);
