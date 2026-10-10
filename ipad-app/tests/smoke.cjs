@@ -14,7 +14,10 @@ async function request(path,opts={}){
  assert.equal(page.status,200,'the full iPad UI must be served');
  const html=await page.text();
  assert.ok(html.includes('Audio Mixer'));
- for(const asset of ['/style.css','/app.js']){
+ assert.ok(html.includes('id="layout-mode"'),'missing layout selector');
+ assert.ok(html.includes('data-tab="favorites"'),'missing favorites view');
+ assert.ok(html.includes('id="edit-favorites"'),'missing favorite edit mode');
+ for(const asset of ['/style.css','/app.js','/favorites.js']){
   const res=await request(asset);assert.equal(res.status,200,'missing '+asset);
  }
  const forbidden=await request('/api/state');
