@@ -63,15 +63,15 @@ internal static class Program
         var collected = new Dictionary<string, (string name, string device, double volume, bool mute, int sessions)>(
             StringComparer.OrdinalIgnoreCase);
         using var enumerator = new MMDeviceEnumerator();
-        using var endpoints = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+        var endpoints = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
         foreach (var endpoint in endpoints)
         {
             // Device and individual session errors should not hide other sound sessions.
             try
             {
                 using var device = endpoint;
-                using var manager = device.AudioSessionManager;
-                using var sessions = manager.Sessions;
+                var manager = device.AudioSessionManager;
+                var sessions = manager.Sessions;
                 for (int n = 0; n < sessions.Count; n++)
                 {
                     try
