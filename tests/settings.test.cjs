@@ -112,3 +112,22 @@ test('standalone mute key hides step and touch fader configuration',()=>{
   assert.equal(elements['step-wrapper'].hidden,true);
   assert.equal(elements['segment-wrapper'].hidden,true);
 });
+
+test('compact mixer inspector exposes step but hides five-key segment controls',()=>{
+  const {socket,elements,action}=launchInspector('com.noobatwork.voicemeeter.compact');
+  assert.equal(elements['step-wrapper'].hidden,false);
+  assert.equal(elements['compact-wrapper'].hidden,false);
+  assert.equal(elements['segment-wrapper'].hidden,true);
+  elements.channel.value='Bus:3';
+  elements.step.value='1.5';
+  elements.label.value='Stream';
+  elements.channel.emit('change');
+  const saved=socket.sent.at(-1);
+  assert.equal(saved.event,'setSettings');
+  assert.equal(saved.action,action);
+  assert.equal(saved.context,'inspector-uuid');
+  assert.equal(saved.payload.group,'Bus');
+  assert.equal(saved.payload.index,3);
+  assert.equal(saved.payload.step,1.5);
+  assert.equal(saved.payload.label,'Stream');
+});
