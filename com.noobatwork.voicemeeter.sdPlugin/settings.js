@@ -10,6 +10,8 @@
   const stepWrapper = document.getElementById('step-wrapper');
   const segmentWrapper = document.getElementById('segment-wrapper');
   const compactWrapper = document.getElementById('compact-wrapper');
+  const muteGestureWrapper = document.getElementById('mute-gesture-wrapper');
+  const muteGesture = document.getElementById('muteGesture');
   const segment = document.getElementById('segment');
   const minGain = document.getElementById('minGain');
   const maxGain = document.getElementById('maxGain');
@@ -30,7 +32,7 @@
     channel.appendChild(parent);
   }
   let ws, context, action, pending=null, debounce, hasWritten=false;
-  let settings={group:'Strip',index:0,label:'',step:2,appId:''};
+  let settings={group:'Strip',index:0,label:'',step:2,appId:'',muteGesture:'doubleTap'};
   let discoveredApps=[];
   const normalize=s=>{
     s=s||{};
@@ -40,6 +42,7 @@
     const gainHigh=s.maxGain!==undefined&&Number.isFinite(max)?Math.max(gainLow+1,Math.min(12,max)):Math.max(0,gainLow+1);
     return {
       appId:typeof s.appId==='string'?s.appId.toLowerCase().slice(0,120):'',
+      muteGesture:s.muteGesture==='tapHold'?'tapHold':'doubleTap',
       group:s.group==='Bus'?'Bus':'Strip',
       index:Number.isFinite(index)?Math.max(0,Math.min(7,Math.trunc(index))):0,
       label:typeof s.label==='string'?s.label.slice(0,24):'',
@@ -51,7 +54,7 @@
   };
   const equals=(a,b)=>{
     a=normalize(a);b=normalize(b);
-    return a.group===b.group&&a.index===b.index&&a.label===b.label&&a.step===b.step&&a.segment===b.segment&&a.minGain===b.minGain&&a.maxGain===b.maxGain&&a.appId===b.appId;
+    return a.group===b.group&&a.index===b.index&&a.label===b.label&&a.step===b.step&&a.segment===b.segment&&a.minGain===b.minGain&&a.maxGain===b.maxGain&&a.appId===b.appId&&a.muteGesture===b.muteGesture;
   };
   function buildAppOptions(selected){
     appSelect.innerHTML='';
@@ -67,6 +70,7 @@
     channel.value=settings.group+':'+settings.index;
     label.value=settings.label;
     step.value=String(settings.step);
+    muteGesture.value=settings.muteGesture;
     segment.value=String(settings.segment);
     minGain.value=String(settings.minGain);
     maxGain.value=String(settings.maxGain);
@@ -78,6 +82,7 @@
       appId:appSelect.value||'',
       group:selected[0],index:Number.isFinite(index)?index:0,
       label:label.value.trim(),step:Number(step.value),
+      muteGesture:muteGesture.value,
       segment:Number(segment.value),minGain:Number(minGain.value),maxGain:Number(maxGain.value)
     });
   }
@@ -98,6 +103,7 @@
   }
   channel.addEventListener('change',save);
   appSelect.addEventListener('change',save);
+  muteGesture.addEventListener('change',save);
   refreshApps.addEventListener('click',()=>{
     if(ws?.readyState===WebSocket.OPEN&&action?.endsWith('.app')){
       ws.send(JSON.stringify({event:'sendToPlugin',action,context,payload:{op:'list-apps'}}));
@@ -135,6 +141,7 @@
       const keyIsStep=action.endsWith('.up')||action.endsWith('.down')||isCompact||isApp;
       stepWrapper.hidden=!keyIsStep;
       compactWrapper.hidden=!(isCompact||isApp);
+      muteGestureWrapper.hidden=!(isCompact||isApp);
       segmentWrapper.hidden=!action.endsWith('.segment');
       applySettings(details.payload?.settings||{});
       ws=new WebSocket('ws://127.0.0.1:'+port);
