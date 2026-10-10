@@ -15,21 +15,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Create Stream Deck icon PNG assets
+      - name: Create required Stream Deck icons
         shell: python
         run: |
           from pathlib import Path
-          import struct,zlib
+          import struct,zlib,json
           root=Path("com.noobatwork.voicemeeter.sdPlugin/imgs")
           root.mkdir(parents=True,exist_ok=True)
-          def png(size,color):
-              w=h=size
-              row=b'\x00'+bytes(color)*w
-              raw=row*h
-              def chunk(k,v):return struct.pack('!I',len(v))+k+v+struct.pack('!I',zlib.crc32(k+v)&0xffffffff)
-              return b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',w,h,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw))+chunk(b'IEND',b'')
-          for name,size in [('action',20),('action@2x',40)]:
-              (root/(name+'.png')).write_bytes(png(size,(28,172,160,255)))
+          def png(size,kind):
+              pixels=[]
+              for y in range(size):
+                  row=bytearray(b'\x00')
+                  for x in range(size):
+                      u=x/size;v=y/size
+                      # Solid panel for large icons; white transparent for category/action icons.
+                      bg=(17,27,43,255) if kind in ('plugin','key') else (0,0,0,0)
+                      # Three clean vertical sliders.
+                      center=any(abs(u-c)<.032 and .19<v<.83 for c in (.28,.50,.72))
+                      handles=any(abs(u-c)<.105 and abs(v-h)<.050 for c,h in ((.28,.36),(.50,.66),(.72,.49)))
+                      if handles:color=(255,255,255,255)
+                      elif center:color=(28,190,170,255) if kind in ('plugin','key') else (255,255,255,255)
+                      else:color=bg
+                      row.extend(bytes(color))
+                  pixels.append(bytes(row))
+              def chunk(k,d):return struct.pack('!I',len(d))+k+d+struct.pack('!I',zlib.crc32(k+d)&0xffffffff)
+              return b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',size,size,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(b''.join(pixels)))+chunk(b'IEND',b'')
+          for kind,size in [('plugin',256),('plugin@2x',512),('category',28),('category@2x',56),('action',20),('action@2x',40),('key',72),('key@2x',144)]:
+              (root/(kind+'.png')).write_bytes(png(size,kind.split('@')[0]))
+          m=json.loads(Path("com.noobatwork.voicemeeter.sdPlugin/manifest.json").read_text())
+          for key in ('Icon','CategoryIcon','CodePath','UUID','Version','Name','Actions'):
+              assert m.get(key),f"Required manifest field missing: {key}"
+          references=[m['Icon'],m['CategoryIcon']]+[p for a in m['Actions'] for p in [a['Icon']]+[s['Image'] for s in a['States']]]
+          for p in references:
+              assert (root.parent/(p+'.png')).is_file(),f"Missing icon: {p}"
+              assert (root.parent/(p+'@2x.png')).is_file(),f"Missing @2x icon: {p}"
+          assert m['Version']=='0.1.1.0'
       - name: Validate JS and manifest
         shell: bash
         run: |
@@ -41,7 +61,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           from zipfile import ZipFile,ZIP_DEFLATED
-          with ZipFile('NoobatWork-Voicemeeter-Control-v0.1.0-alpha.zip','w',ZIP_DEFLATED) as z:
+          with ZipFile('NoobatWork-Voicemeeter-Control-v0.1.1-alpha.zip','w',ZIP_DEFLATED) as z:
               for f in Path('com.noobatwork.voicemeeter.sdPlugin').rglob('*'):
                   if f.is_file():z.write(f)
               for name in ('INSTALL.ps1','INSTALL.bat','README.md','LICENSE'):
@@ -51,5 +71,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view v0.1.0-alpha >/dev/null 2>&1 || gh release create v0.1.0-alpha --prerelease --title "v0.1.0-alpha (experimental)" --notes "Unverified Windows/Stream Deck alpha. Extract ZIP and run INSTALL.bat after closing Stream Deck."
-          gh release upload v0.1.0-alpha NoobatWork-Voicemeeter-Control-v0.1.0-alpha.zip --clobber
+          gh release view v0.1.1-alpha >/dev/null 2>&1 || gh release create v0.1.1-alpha --prerelease --title "v0.1.1-alpha (experimental)" --notes "Unverified Windows/Stream Deck alpha. Extract ZIP and run INSTALL.bat after closing Stream Deck."
+          gh release upload v0.1.1-alpha NoobatWork-Voicemeeter-Control-v0.1.1-alpha.zip --clobber
