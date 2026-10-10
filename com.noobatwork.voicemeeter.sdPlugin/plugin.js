@@ -2,6 +2,7 @@
 const {spawn}=require('node:child_process');
 const {join}=require('node:path');
 const model=require('./fader-model.js');
+const {createCompactGestures}=require('./compact-gestures.js');
 const args=process.argv.slice(2);
 function arg(name){const i=args.indexOf(name);return i<0?null:args[i+1];}
 const port=arg('-port'),uuid=arg('-pluginUUID'),registration=arg('-registerEvent');
@@ -21,6 +22,7 @@ function makeImage(action,s,base){
  const gp=model.gainPercent(gain);
  const valid=online&&gotGain;
  const status=!online?'OFFLINE':!gotGain?'-- dB':mute?'MUTED':gainText(gain);
+ const compact=action.endsWith('.compact');
  const muteAction=action.endsWith('.mute');
  const segment=action.endsWith('.segment');
  const activeSegment=valid&&gain>=model.segmentGain(s)-.1;
@@ -30,7 +32,16 @@ function makeImage(action,s,base){
   '<rect width="144" height="144" fill="#101a2b"/>',
   '<text x="72" y="21" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="bold" fill="#f0f5fa">'+title+'</text>'
  ];
- if(segment){
+ if(compact){
+   const db=valid?gainText(gain):'OFFLINE';
+   const tint=mute?'#fb7185':'#eafbf7';
+   parts.push('<rect x="10" y="29" width="124" height="68" rx="11" fill="#1f3540"/>');
+   parts.push('<text x="72" y="61" text-anchor="middle" font-family="Arial" font-size="27" font-weight="bold" fill="'+tint+'">'+(mute?'MUTE':db)+'</text>');
+   parts.push('<text x="72" y="80" text-anchor="middle" font-family="Arial" font-size="10" fill="#b5e9df">TAP +  |  HOLD −</text>');
+   parts.push('<rect x="14" y="98" width="116" height="9" rx="3" fill="#38495b"/>');
+   parts.push('<rect x="14" y="98" width="'+(116*gp/100)+'" height="9" rx="3" fill="'+c+'"/>');
+   parts.push('<text x="72" y="117" text-anchor="middle" font-size="9" font-family="Arial" fill="#c7d5e5">FADER  ·  2× MUTE</text>');
+ }else if(segment){
    const target=model.segmentGain(s);
    parts.push('<rect x="14" y="34" width="116" height="65" rx="12" stroke="'+(activeSegment?c:'#566476')+'" stroke-width="3" fill="'+(activeSegment?'#225b58':'#253044')+'"/>');
    parts.push('<text x="72" y="57" text-anchor="middle" font-size="12" fill="#dce6f3" font-family="Arial">'+s.segment+' / 5</text>');
@@ -46,7 +57,7 @@ function makeImage(action,s,base){
    parts.push('<rect x="61" y="'+(100-gp*.69)+'" width="22" height="'+(gp*.69)+'" rx="4" fill="'+c+'"/>');
    parts.push('<rect x="47" y="'+(100-gp*.69-4)+'" width="50" height="8" rx="3" fill="#e1f0f6"/>');
  }
- parts.push('<text x="72" y="116" text-anchor="middle" font-size="12" font-family="Arial" fill="#e5edf6">'+status+'</text>');
+ if(!compact)parts.push('<text x="72" y="116" text-anchor="middle" font-size="12" font-family="Arial" fill="#e5edf6">'+status+'</text>');
  // True signal meter (post-mute for strips, output for buses). It is NOT the gain indicator.
  parts.push('<rect x="14" y="123" width="116" height="9" rx="3" fill="#384456"/>');
  parts.push('<rect x="14" y="123" width="'+(116*mp/100)+'" height="9" rx="3" fill="'+(mp>90?'#fbbe55':'#39cbac')+'"/>');
@@ -111,9 +122,26 @@ function setParam(path,value){
  render();
  setTimeout(poll,90);
 }
+function compactGesture(ctx,gesture){
+ const entry=active.get(ctx);
+ if(!entry||!online)return;
+ const s=model.normalize(entry.settings),base=model.channel(s);
+ if(gesture==='mute'){
+   const previous=cache.get(base+'.Mute')||0;
+   setParam(base+'.Mute',previous?0:1);
+   return;
+ }
+ const gain=cache.get(base+'.Gain');
+ if(!Number.isFinite(gain))return;
+ const delta=gesture==='increase'?s.step:-s.step;
+ const next=Math.round(model.clamp(gain+delta,-60,12)*10)/10;
+ setParam(base+'.Gain',next);
+}
+const compactGestures=createCompactGestures(compactGesture);
 function keyDown(message){
  const entry=active.get(message.context);
  if(!entry||!online)return;
+ if(message.action.endsWith('.compact')){compactGestures.down(message.context);return;}
  const s=model.normalize(entry.settings),base=model.channel(s);
  const gain=cache.get(base+'.Gain'),mute=cache.get(base+'.Mute')||0;
  if(message.action.endsWith('.fader')||message.action.endsWith('.mute')){
@@ -134,15 +162,18 @@ ws.onmessage=e=>{
    active.set(m.context,{action:m.action,settings:m.payload?.settings||{}});
    paint(m.context,active.get(m.context));poll();
  }else if(m.event==='willDisappear'){
+   compactGestures.clear(m.context);
    active.delete(m.context);lastImage.delete(m.context);
  }else if(m.event==='didReceiveSettings'){
    const updated=m.payload?.settings||{};
    if(active.has(m.context)){
+     compactGestures.clear(m.context);
      active.set(m.context,{action:m.action,settings:updated});
      lastImage.delete(m.context);render();poll();
      send({event:'sendToPropertyInspector',context:m.context,payload:{type:'settings-confirmed',settings:updated}});
    }
  }else if(m.event==='keyDown')keyDown(m);
+ else if(m.event==='keyUp'&&m.action.endsWith('.compact'))compactGestures.up(m.context);
 };
-ws.onclose=()=>{child?.kill();process.exit(0);};
+ws.onclose=()=>{compactGestures.clearAll();child?.kill();process.exit(0);};
 setInterval(poll,350);
