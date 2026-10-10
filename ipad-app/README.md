@@ -1,12 +1,46 @@
-# NoobatWork Audio Mixer – iPad Edition (v0.1.0 Preview)
+# NoobatWork Audio Mixer – iPad Edition (v0.1.2 Preview)
 
 A new, **separate** local iPad mixer—not a replacement for the tested Stream Deck plugin.
 
 The goal is the **first approved dark seven-channel mockup**: proper touch-draggable vertical faders, names/icons, real audio activity meters, per-app mute, a hardware view, and a master output section. Everything is adaptable based on tests on the actual iPad.
 
+
+## v0.1.2 — Split View and second tablet
+
+The Windows companion remains the same **single** LAN server (TCP port 8876).
+Its WebSocket implementation handles multiple paired devices concurrently.
+You can keep Stream Deck Mobile next to this mixer in iPadOS Split View,
+or dedicate a second iPad / Android tablet to the full-size mixer.
+For Android, open the exact Windows LAN URL in Chrome; there is no separate Android APK yet.
+
+The new **Ansicht** selector is intentionally stored *per browser / device*:
+- **Automatisch** (default): Full-width seven-strip design on wide screens;
+  when iPadOS gives Safari a narrow Split View window, a compact mixer appears automatically.
+- **Split-Screen**: Force small-footprint, touch-friendly channel cards and mute keys.
+- **Vollbild**: Prefer the original large cards; with insufficient width,
+  additional strips scroll sideways rather than becoming microscopic.
+
+Use **★ Favoriten bearbeiten** to pin the essential channels, e.g. Discord,
+Opera GX, Game and microphone, and reorder them with left/right arrows.
+The **★** tab displays only your active favorites. Your favorite list is
+stored locally per browser on that tablet, so both tablets can show different
+first-page channels. Devices share the *live Windows mixer volumes*, not the layout settings.
+
+**iPadOS note:** The operating system controls actual Split View availability,
+app window proportions and multitasking. The layout selector changes only
+the browser content, not iPadOS window sizes. Open the mixer in Safari and
+Stream Deck Mobile in the second window, adjusting the divider to taste.
+Safari's Add to Home Screen mode and Android launcher shortcuts may have
+different multitasking behavior across OS versions. The regular browser
+is the reliable Split View testing path.
+
+**Latency:** The v0.1.1 fast audio path, 90 ms last-value-wins queue,
+optimistic touch feedback and minimized redraws remain unchanged.
+No change to the separate working Stream Deck v0.6.0 release.
+
 ## Windows setup (Windows 10/11 x64)
 
-1. Download **NoobatWork-iPad-Mixer-v0.1.1-preview-Setup.exe** from the official GitHub release.
+1. Download **NoobatWork-iPad-Mixer-v0.1.2-preview-Setup.exe** from the official GitHub release.
 2. Run Setup.exe. It installs under your Windows user account. No .NET SDK or Node installation required.
 3. Start **NoobatWork Audio Mixer – iPad Edition** from the Windows Start menu (or launch it at the end of Setup).
 4. **Leave the console window open.** It prints a LAN address (such as `http://192.168.1.85:8876/`) and a *fresh six-digit pairing code*.
