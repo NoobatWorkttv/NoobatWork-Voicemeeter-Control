@@ -21,11 +21,11 @@ function FindStreamDeck {
   return $null
 }
 try {
-  Note '=== NoobatWork Stream Deck Setup v0.5.1-alpha ==='
+  Note '=== NoobatWork Stream Deck Setup v0.6.0-alpha ==='
   $mf=Join-Path $PluginPath 'manifest.json'
   if(-not(Test-Path -LiteralPath $mf)){throw 'manifest.json fehlt.'}
   $v=(Get-Content -LiteralPath $mf -Raw | ConvertFrom-Json).Version
-  if($v -ne '0.5.1.0'){throw "Falsche Plugin-Version: $v"}
+  if($v -ne '0.6.0.0'){throw "Falsche Plugin-Version: $v"}
   if(-not(Test-Path -LiteralPath (Join-Path $PluginPath 'plugin.js'))){throw 'plugin.js fehlt.'}
   if(-not(Test-Path -LiteralPath (Join-Path $PluginPath 'bin\NoobatWorkAudioSessions.exe'))){throw 'AudioSessions.exe fehlt.'}
   $exe=FindStreamDeck
