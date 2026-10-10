@@ -83,7 +83,7 @@ jobs:
         run: |
           $tag = 'v0.2.0-control-center'
           gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) { throw 'Version already published. Refusing to overwrite release.' }
+          if ($LASTEXITCODE -eq 0) { Write-Host 'Version already published; existing assets remain untouched.'; exit 0 }
           gh release create $tag --target '${{ github.sha }}' --prerelease --latest=false --title 'NoobatWork Mixer Control Center v0.2.0' --notes-file control-center/RELEASE.md control-center/dist/NoobatWork-Mixer-Control-Center-v0.2.0-Setup.exe control-center/dist/SHA256SUMS.txt
           if ($LASTEXITCODE -ne 0) { throw 'Release failed' }
           gh release view $tag --json url,tagName,assets

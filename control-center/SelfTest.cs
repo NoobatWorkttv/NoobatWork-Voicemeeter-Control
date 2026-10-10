@@ -76,6 +76,7 @@ internal static class SelfTest
         }
         finally { stop.Cancel(); await server.WaitAsync(TimeSpan.FromSeconds(15)); }
         Check(MixerServer.Status == "Gestoppt", "Server did not stop");
+        Check(MixerServer.AudioStatus == "Audioverbindungen inaktiv", "Stale audio status after stop");
     }
     private static async Task Send(ClientWebSocket socket, object value) => await socket.SendAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value)), WebSocketMessageType.Text, true, CancellationToken.None);
     private static async Task<JsonElement> Receive(ClientWebSocket socket, string type)

@@ -221,7 +221,7 @@ internal static class MixerServer
     public static void RotateCode() { pairingCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString(); PairAttempts.Clear(); Console.WriteLine("Pairing-Code erneuert"); }
     public static string AudioStatus
     {
-        get { if (engine == null) return "Audio wartet"; var state = JsonSerializer.SerializeToElement(engine.Snapshot()); return "Windows Audio: " + (state.GetProperty("appOnline").GetBoolean() ? "Online" : "Offline") + " · Voicemeeter: " + (state.GetProperty("vmOnline").GetBoolean() ? "Online" : "Offline"); }
+        get { if (engine == null || Status != "Online") return "Audioverbindungen inaktiv"; var state = JsonSerializer.SerializeToElement(engine.Snapshot()); return "Windows Audio: " + (state.GetProperty("appOnline").GetBoolean() ? "Online" : "Offline") + " · Voicemeeter: " + (state.GetProperty("vmOnline").GetBoolean() ? "Online" : "Offline"); }
     }
     public static List<MixerItem> AvailableItems()
     {
