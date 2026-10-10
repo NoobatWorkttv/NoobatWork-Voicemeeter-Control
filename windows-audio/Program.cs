@@ -44,6 +44,14 @@ internal static class Program
                 }
 
                 // Retain the same COM thread for discovery and updates.
+#if IPAD_MIXER
+                if (op != "list")
+                {
+                    ApplyFast(op, app, root);
+                    Reply(new { type = "ack", requested = op });
+                    continue;
+                }
+#endif
                 var result = Scan(op, app, root);
                 Reply(new { type = "apps", apps = result, requested = op });
             }
