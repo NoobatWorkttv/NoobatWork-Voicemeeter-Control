@@ -68,7 +68,7 @@ jobs:
           for p in references:
               assert (root.parent/(p+'.png')).is_file(),f"Missing icon: {p}"
               assert (root.parent/(p+'@2x.png')).is_file(),f"Missing @2x icon: {p}"
-          assert m['Version']=='0.3.1.0'
+          assert m['Version']=='0.4.0.0'
           assert m['PropertyInspectorPath']=='settings.html'
           assert (root.parent/'settings.html').is_file()
           assert (root.parent/'settings.js').is_file()
@@ -76,10 +76,13 @@ jobs:
           ids={a['UUID'] for a in m['Actions']}
           assert 'com.noobatwork.voicemeeter.segment' in ids
           assert 'com.noobatwork.voicemeeter.mute' in ids
+          assert 'com.noobatwork.voicemeeter.compact' in ids
+          assert (root.parent/'compact-gestures.js').is_file()
       - name: Validate JS and manifest
         shell: bash
         run: |
           node --check com.noobatwork.voicemeeter.sdPlugin/plugin.js
+          node --check com.noobatwork.voicemeeter.sdPlugin/compact-gestures.js
           node --check com.noobatwork.voicemeeter.sdPlugin/fader-model.js
           node --check com.noobatwork.voicemeeter.sdPlugin/settings.js
           node --test tests/*.test.cjs
@@ -90,7 +93,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           from zipfile import ZipFile,ZIP_DEFLATED
-          with ZipFile('NoobatWork-Voicemeeter-Control-v0.3.1-alpha.zip','w',ZIP_DEFLATED) as z:
+          with ZipFile('NoobatWork-Voicemeeter-Control-v0.4.0-alpha.zip','w',ZIP_DEFLATED) as z:
               for f in Path('com.noobatwork.voicemeeter.sdPlugin').rglob('*'):
                   if f.is_file():z.write(f)
               for name in ('INSTALL.ps1','INSTALL.bat','README.md','LICENSE'):
@@ -100,5 +103,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view v0.3.1-alpha >/dev/null 2>&1 || gh release create v0.3.1-alpha --prerelease --title "v0.3.1-alpha (experimental)" --notes "Unverified Windows/Stream Deck alpha. Extract ZIP and run INSTALL.bat after closing Stream Deck."
-          gh release upload v0.3.1-alpha NoobatWork-Voicemeeter-Control-v0.3.1-alpha.zip --clobber
+          gh release view v0.4.0-alpha >/dev/null 2>&1 || gh release create v0.4.0-alpha --prerelease --title "v0.4.0-alpha (experimental)" --notes "Unverified Windows/Stream Deck alpha. Extract ZIP and run INSTALL.bat after closing Stream Deck."
+          gh release upload v0.4.0-alpha NoobatWork-Voicemeeter-Control-v0.4.0-alpha.zip --clobber
