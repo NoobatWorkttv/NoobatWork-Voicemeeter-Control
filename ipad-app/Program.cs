@@ -149,18 +149,25 @@ internal static class Program
         app.Lifetime.ApplicationStopping.Register(() => { cts.Cancel(); engine.Dispose(); });
         _ = Task.Run(async () =>
         {
+            // Commands flush rapidly; full app/Voicemeeter scans are throttled
+            // inside AudioEngine. Broadcasting need not run on every command tick.
+            var lastBroadcast = DateTime.MinValue;
             while (!cts.IsCancellationRequested)
             {
                 try
                 {
                     engine.Poll();
-                    var snapshot = engine.Snapshot();
-                    var tasks = Clients.Values.Select(c => c.Send(snapshot)).ToArray();
-                    await Task.WhenAll(tasks);
-                    await Task.Delay(600, cts.Token);
+                    if (DateTime.UtcNow - lastBroadcast >= TimeSpan.FromMilliseconds(300))
+                    {
+                        lastBroadcast = DateTime.UtcNow;
+                        var snapshot = engine.Snapshot();
+                        var tasks = Clients.Values.Select(c => c.Send(snapshot)).ToArray();
+                        await Task.WhenAll(tasks);
+                    }
+                    await Task.Delay(90, cts.Token);
                 }
                 catch (OperationCanceledException) { break; }
-                catch (Exception) { try { await Task.Delay(1500, cts.Token); } catch { break; } }
+                catch (Exception) { try { await Task.Delay(500, cts.Token); } catch { break; } }
             }
         });
 
