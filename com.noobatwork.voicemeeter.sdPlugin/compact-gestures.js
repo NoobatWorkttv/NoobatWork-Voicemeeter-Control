@@ -7,17 +7,17 @@
  * Timers are injected for deterministic tests. No API calls or audio handling here.
  */
 function createCompactGestures(emit,opts={}) {
-  const now=opts.now||Date.now;
   const later=opts.setTimeout||setTimeout;
   const cancel=opts.clearTimeout||clearTimeout;
   const holdMs=opts.holdMs||520;
   const doubleMs=opts.doubleMs||280;
   const repeatMs=opts.repeatMs||280;
+  const maxRepeats=opts.maxRepeats||12;
   const keys=new Map();
   function state(ctx) {
     let s=keys.get(ctx);
     if(!s){
-      s={pressed:false,holding:false,second:false,holdTimer:null,repeatTimer:null,tapTimer:null};
+      s={pressed:false,holding:false,second:false,holdTimer:null,repeatTimer:null,tapTimer:null,repeatCount:0};
       keys.set(ctx,s);
     }
     return s;
@@ -30,7 +30,7 @@ function createCompactGestures(emit,opts={}) {
     if(s.pressed)return; // ignore duplicate keyDown events
     s.second=s.tapTimer!==null;
     if(s.second)clearTimer(s,'tapTimer');
-    s.pressed=true;s.holding=false;
+    s.pressed=true;s.holding=false;s.repeatCount=0;
     s.holdTimer=later(function beginHold(){
       s.holdTimer=null;
       if(!s.pressed)return;
@@ -40,9 +40,10 @@ function createCompactGestures(emit,opts={}) {
         s.second=false;
       }
       function repeat(){
-        if(!s.pressed)return;
+        if(!s.pressed||s.repeatCount>=maxRepeats)return;
+        s.repeatCount++;
         emit(ctx,'decrease');
-        s.repeatTimer=later(repeat,repeatMs);
+        if(s.repeatCount<maxRepeats)s.repeatTimer=later(repeat,repeatMs);
       }
       repeat();
     },holdMs);
