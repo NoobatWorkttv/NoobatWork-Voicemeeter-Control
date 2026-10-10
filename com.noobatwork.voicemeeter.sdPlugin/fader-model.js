@@ -17,6 +17,8 @@ function normalize(s={}) {
     label:typeof s.label==='string'?s.label.slice(0,24):'',
     step,
     muteGesture:s.muteGesture==='tapHold'?'tapHold':'doubleTap',
+    theme:['hybrid','neon','clean'].includes(s.theme)?s.theme:'hybrid',
+    accent:['auto','cyan','blue','purple','red','orange','green'].includes(s.accent)?s.accent:'auto',
     segment:clamp(Math.trunc(safeNumber(s.segment,1)),1,5),
     minGain,maxGain
   };
