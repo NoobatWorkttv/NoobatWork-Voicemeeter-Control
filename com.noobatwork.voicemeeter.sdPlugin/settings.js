@@ -20,7 +20,7 @@
     }
     channel.appendChild(parent);
   }
-  let ws, context, action, pending=null, debounce;
+  let ws, context, action, pending=null, debounce, hasWritten=false;
   let settings={group:'Strip',index:0,label:'',step:2};
   const normalize=s=>{
     s=s||{};
@@ -57,10 +57,13 @@
     }
     settings=collect();
     pending=settings;
+    hasWritten=true;
     // 'uuid' from connectElgatoStreamDeckSocket is the UI context the
     // property inspector MUST use for setSettings/getSettings requests.
     ws.send(JSON.stringify({event:'setSettings',action,context,payload:settings}));
     status.textContent='Speichern …';
+    const thisSave=pending;
+    setTimeout(()=>{if(pending===thisSave)status.textContent='Speichern nicht bestätigt – Stream-Deck-Log prüfen';},5000);
   }
   channel.addEventListener('change',save);
   step.addEventListener('change',save);
@@ -98,7 +101,7 @@
           const msg=JSON.parse(e.data);
           if(msg.event==='didReceiveSettings'&&msg.action===action) {
             // Never overwrite a newer local change with a delayed getSettings response.
-            if(!pending) applySettings(msg.payload?.settings||{});
+            if(!pending&&!hasWritten) applySettings(msg.payload?.settings||{});
           }
           if(msg.event==='sendToPropertyInspector'&&msg.action===action&&msg.payload?.type==='settings-confirmed') {
             const confirmed=msg.payload.settings||{};
