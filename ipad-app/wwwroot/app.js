@@ -279,8 +279,13 @@
     }
     for(const [key,card] of client.cards)
       if(!seen.has(key)&&card.parentNode===channels)card.remove();
-    // Preserve expected visual order without recreating the card being dragged.
-    for(const item of items)channels.append(client.cards.get(targetKey(item)));
+    // Only reorder when necessary. Reparenting every update would cancel
+    // a finger's pointer capture in Safari during a long drag.
+    items.forEach((item,index)=>{
+      const node=client.cards.get(targetKey(item));
+      if(channels.children[index]!==node)
+        channels.insertBefore(node,channels.children[index]||null);
+    });
     const master=(client.state.channels||[]).find(ch=>ch.id==='Bus[0]');
     client.master=master||null;
     $('master-db').textContent=master?.online?db(master.gain)+' dB':'-- dB';
