@@ -11,7 +11,4 @@
     <PublishTrimmed>false</PublishTrimmed>
     <AssemblyName>NoobatWork-iPad-Mixer</AssemblyName>
   </PropertyGroup>
-  <ItemGroup>
-    <Content Include="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>
