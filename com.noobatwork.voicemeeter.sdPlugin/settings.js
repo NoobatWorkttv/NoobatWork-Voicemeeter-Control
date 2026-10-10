@@ -1,6 +1,10 @@
 'use strict';
 (() => {
   const channel = document.getElementById('channel');
+  const channelWrapper = document.getElementById('channel-wrapper');
+  const appWrapper = document.getElementById('app-wrapper');
+  const appSelect = document.getElementById('app');
+  const refreshApps = document.getElementById('refresh-apps');
   const label = document.getElementById('label');
   const step = document.getElementById('step');
   const stepWrapper = document.getElementById('step-wrapper');
@@ -26,7 +30,8 @@
     channel.appendChild(parent);
   }
   let ws, context, action, pending=null, debounce, hasWritten=false;
-  let settings={group:'Strip',index:0,label:'',step:2};
+  let settings={group:'Strip',index:0,label:'',step:2,appId:''};
+  let discoveredApps=[];
   const normalize=s=>{
     s=s||{};
     const index=Number(s.index), n=Number(s.step);
@@ -34,6 +39,7 @@
     const gainLow=s.minGain!==undefined&&Number.isFinite(min)?Math.max(-60,Math.min(11,min)):-40;
     const gainHigh=s.maxGain!==undefined&&Number.isFinite(max)?Math.max(gainLow+1,Math.min(12,max)):Math.max(0,gainLow+1);
     return {
+      appId:typeof s.appId==='string'?s.appId.toLowerCase().slice(0,120):'',
       group:s.group==='Bus'?'Bus':'Strip',
       index:Number.isFinite(index)?Math.max(0,Math.min(7,Math.trunc(index))):0,
       label:typeof s.label==='string'?s.label.slice(0,24):'',
@@ -45,10 +51,19 @@
   };
   const equals=(a,b)=>{
     a=normalize(a);b=normalize(b);
-    return a.group===b.group&&a.index===b.index&&a.label===b.label&&a.step===b.step&&a.segment===b.segment&&a.minGain===b.minGain&&a.maxGain===b.maxGain;
+    return a.group===b.group&&a.index===b.index&&a.label===b.label&&a.step===b.step&&a.segment===b.segment&&a.minGain===b.minGain&&a.maxGain===b.maxGain&&a.appId===b.appId;
   };
+  function buildAppOptions(selected){
+    appSelect.innerHTML='';
+    const option=(value,title)=>{const el=document.createElement('option');el.value=value;el.textContent=title;appSelect.appendChild(el);};
+    option('','Anwendung auswählen ...');
+    if(selected&&!discoveredApps.some(a=>a.id===selected))option(selected,selected+' (derzeit offline)');
+    for(const app of discoveredApps)option(app.id,app.name+' · '+app.device+' · '+Math.round(app.volume*100)+' %');
+    appSelect.value=selected||'';
+  }
   function applySettings(s) {
     settings=normalize(s);
+    buildAppOptions(settings.appId);
     channel.value=settings.group+':'+settings.index;
     label.value=settings.label;
     step.value=String(settings.step);
@@ -60,6 +75,7 @@
     const selected=channel.value.split(':');
     const index=Number(selected[1]);
     return normalize({
+      appId:appSelect.value||'',
       group:selected[0],index:Number.isFinite(index)?index:0,
       label:label.value.trim(),step:Number(step.value),
       segment:Number(segment.value),minGain:Number(minGain.value),maxGain:Number(maxGain.value)
@@ -81,6 +97,13 @@
     setTimeout(()=>{if(pending===thisSave)status.textContent='Speichern nicht bestätigt – Stream-Deck-Log prüfen';},5000);
   }
   channel.addEventListener('change',save);
+  appSelect.addEventListener('change',save);
+  refreshApps.addEventListener('click',()=>{
+    if(ws?.readyState===WebSocket.OPEN&&action?.endsWith('.app')){
+      ws.send(JSON.stringify({event:'sendToPlugin',action,context,payload:{op:'list-apps'}}));
+      status.textContent='Windows-Audiositzungen werden gesucht ...';
+    }
+  });
   segment.addEventListener('change',save);
   minGain.addEventListener('change',save);
   maxGain.addEventListener('change',save);
@@ -105,21 +128,31 @@
       context=uuid;
       action=details.action;
       if(!action) throw new Error('Aktions-ID fehlt');
+      const isApp=action.endsWith('.app');
+      appWrapper.hidden=!isApp;
+      channelWrapper.hidden=isApp;
       const isCompact=action.endsWith('.compact');
-      const keyIsStep=action.endsWith('.up')||action.endsWith('.down')||isCompact;
+      const keyIsStep=action.endsWith('.up')||action.endsWith('.down')||isCompact||isApp;
       stepWrapper.hidden=!keyIsStep;
-      compactWrapper.hidden=!isCompact;
+      compactWrapper.hidden=!(isCompact||isApp);
       segmentWrapper.hidden=!action.endsWith('.segment');
       applySettings(details.payload?.settings||{});
       ws=new WebSocket('ws://127.0.0.1:'+port);
       ws.onopen=()=>{
         ws.send(JSON.stringify({event,uuid}));
         ws.send(JSON.stringify({event:'getSettings',action,context}));
+        if(isApp)ws.send(JSON.stringify({event:'sendToPlugin',action,context,payload:{op:'list-apps'}}));
         status.textContent='Verbunden · Einstellungen geladen';
       };
       ws.onmessage=e=>{
         try {
           const msg=JSON.parse(e.data);
+          if(msg.event==='sendToPropertyInspector'&&msg.payload?.type==='app-list'&&action.endsWith('.app')){
+            discoveredApps=Array.isArray(msg.payload.apps)?msg.payload.apps:[];
+            const selected=appSelect.value||settings.appId;
+            buildAppOptions(selected);
+            if(!pending)status.textContent=discoveredApps.length?'Anwendungen erkannt: '+discoveredApps.length:'Noch keine Audioanwendungen erkannt';
+          }
           if(msg.event==='didReceiveSettings'&&msg.action===action) {
             // Never overwrite a newer local change with a delayed getSettings response.
             if(!pending&&!hasWritten) applySettings(msg.payload?.settings||{});
