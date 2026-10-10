@@ -8,7 +8,7 @@ assert (folder/"bin/bridge.ps1").is_file(), "Missing known-good Voicemeeter brid
 for p in ["wwwroot/index.html","wwwroot/style.css","wwwroot/app.js"]:
     assert (folder/p).is_file(), f"Missing static UI: {p}"
 
-name=Path("NoobatWork-iPad-Mixer-v0.1.0-preview.zip")
+name=Path("NoobatWork-iPad-Mixer-v0.1.1-preview.zip")
 with ZipFile(name,"w",ZIP_DEFLATED,compresslevel=7) as z:
     for p in sorted(folder.rglob("*")):
         if p.is_file():
