@@ -3,8 +3,8 @@
   "Name": "NoobatWork Voicemeeter Control",
   "Category": "NoobatWork Voicemeeter",
   "Author": "NoobatWork",
-  "Description": "Compact one-button mixer, Voicemeeter gain and live signal meters",
-  "Version": "0.4.0.0",
+  "Description": "Voicemeeter live faders plus auto-discovered per-app WASAPI volume and mute",
+  "Version": "0.5.0.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "7.1"
@@ -99,6 +99,21 @@
       "UUID": "com.noobatwork.voicemeeter.compact",
       "Name": "Kompakt-Mixer",
       "Tooltip": "Eine Taste pro Kanal: Tippen lauter, Halten leiser, doppelt Tippen Mute",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "com.noobatwork.voicemeeter.app",
+      "Name": "App-Mixer",
+      "Tooltip": "Windows-Audioanwendungen erkennen, Lautstärke individuell regeln und stummschalten",
       "Icon": "imgs/action",
       "Controllers": [
         "Keypad"
