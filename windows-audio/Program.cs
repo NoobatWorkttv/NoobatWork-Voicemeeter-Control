@@ -23,7 +23,7 @@ internal static class Program
         {
             try
             {
-                using var payload = JsonDocument.Parse(line);
+                using var payload = JsonDocument.Parse(line.TrimStart('\uFEFF', '\u200B'));
                 var root = payload.RootElement;
                 string op = root.TryGetProperty("op", out var o) ? o.GetString() ?? "" : "";
                 string app = root.TryGetProperty("app", out var a) ? (a.GetString() ?? "").ToLowerInvariant() : "";
