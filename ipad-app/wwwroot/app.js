@@ -246,8 +246,11 @@
     root._item=item;root.style.setProperty('--accent',accentFor(item));
     root.classList.toggle('is-muted',item.muted);
     const u=root._ui;
-    if(root.dataset.appIcon!==item.icon){
-      root.dataset.appIcon=item.icon||'';
+    // Null icons used to trigger a full icon DOM replacement on every status
+    // packet: '' !== null. Keep the last key in memory, not a huge DOM attribute.
+    const iconKey=item.icon||'';
+    if(root._iconKey!==iconKey){
+      root._iconKey=iconKey;
       u.logo.replaceChildren();
       if(item.type==='app'&&typeof item.icon==='string'&&/^data:image\/png;base64,iVBORw0KGgo[A-Za-z0-9+/=]+$/.test(item.icon)){
         const img=new Image();img.alt='';img.src=item.icon;u.logo.append(img);
