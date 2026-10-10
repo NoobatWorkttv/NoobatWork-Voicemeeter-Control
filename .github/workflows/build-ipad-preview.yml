@@ -46,8 +46,9 @@ jobs:
       - name: Test local HTTP, pairing and authenticated live WebSocket
         shell: pwsh
         run: |
-          $env:APPDATA = Join-Path $env:RUNNER_TEMP 'NoobatWork-iPad-Smoke'
-          New-Item -ItemType Directory -Force -Path $env:APPDATA | Out-Null
+          # Windows Known Folder ApplicationData is independent of transient
+          # APPDATA environment overrides. Use the disposable runner profile
+          # so the native .NET host and Node test read the exact same token path.
           $env:NAW_SERVER_LOG = Join-Path $env:RUNNER_TEMP 'naw-ipad-console.log'
           $errorLog = Join-Path $env:RUNNER_TEMP 'naw-ipad-errors.log'
           $exe = (Resolve-Path 'ipad-app/publish/NoobatWork-iPad-Mixer.exe').Path
