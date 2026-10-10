@@ -1,4 +1,4 @@
-#define MyVersion "0.1.0-preview"
+#define MyVersion "0.1.1-preview"
 [Setup]
 AppId={{7B3E38AD-D255-4294-BC23-2D3D2A1DD0E7}
 AppName=NoobatWork Audio Mixer - iPad Edition
@@ -11,7 +11,7 @@ DisableDirPage=yes
 PrivilegesRequired=lowest
 SourceDir=..
 OutputDir=dist
-OutputBaseFilename=NoobatWork-iPad-Mixer-v0.1.0-preview-Setup
+OutputBaseFilename=NoobatWork-iPad-Mixer-v0.1.1-preview-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
