@@ -45,4 +45,7 @@ test('Windows remote bridge provides VBVMR_GetLevel and post-mute meter reportin
   const ps=readFileSync(path.join(__dirname,'../com.noobatwork.voicemeeter.sdPlugin/bridge.ps1'),'utf8');
   assert.match(ps,/VBVMR_GetLevel/);
   assert.match(ps,/Send @\{values=\$values;meters=\$meters\}/);
+  assert.equal((ps.match(/\}elseif\(\$q\.op -eq 'set'\)/g)||[]).length,1,'must have exactly one set branch');
+  assert.equal((ps.match(/\bwhile\(\$null -ne \(\$line=/g)||[]).length,1,'must have exactly one command loop');
+  assert.match(ps,/GetLevel is optional on this bridge/);
 });
