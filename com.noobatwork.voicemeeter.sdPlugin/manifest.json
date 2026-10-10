@@ -4,7 +4,7 @@
   "Category": "NoobatWork Voicemeeter",
   "Author": "NoobatWork",
   "Description": "Voicemeeter live faders plus auto-discovered per-app WASAPI volume and mute",
-  "Version": "0.5.0.0",
+  "Version": "0.5.1.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "7.1"
