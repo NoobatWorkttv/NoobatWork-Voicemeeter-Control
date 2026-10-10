@@ -131,3 +131,28 @@ test('compact mixer inspector exposes step but hides five-key segment controls',
   assert.equal(saved.payload.step,1.5);
   assert.equal(saved.payload.label,'Stream');
 });
+
+test('application inspector discovers sessions and persists selected executable',()=>{
+  const {socket,elements,action}=launchInspector('com.noobatwork.voicemeeter.app');
+  assert.equal(elements['app-wrapper'].hidden,false);
+  assert.equal(elements['channel-wrapper'].hidden,true);
+  assert.equal(elements['step-wrapper'].hidden,false);
+  assert.equal(socket.sent.at(-1).event,'sendToPlugin');
+  assert.equal(socket.sent.at(-1).payload.op,'list-apps');
+  socket.recv({event:'sendToPropertyInspector',action,context:'inspector-uuid',
+    payload:{type:'app-list',apps:[
+      {id:'discord.exe',name:'Discord',device:'Voicemeeter VAIO3',volume:0.4,mute:false},
+      {id:'opera.exe',name:'Opera GX',device:'Voicemeeter VAIO3',volume:0.8,mute:false}
+    ]}});
+  elements.app.value='opera.exe';
+  elements.step.value='5';
+  elements.app.emit('change');
+  const msg=socket.sent.at(-1);
+  assert.equal(msg.event,'setSettings');
+  assert.equal(msg.context,'inspector-uuid');
+  assert.equal(msg.payload.appId,'opera.exe');
+  assert.equal(msg.payload.step,5);
+  socket.recv({event:'sendToPropertyInspector',action,context:'action',
+    payload:{type:'settings-confirmed',settings:msg.payload}});
+  assert.equal(elements.status.textContent,'✓ Gespeichert');
+});
