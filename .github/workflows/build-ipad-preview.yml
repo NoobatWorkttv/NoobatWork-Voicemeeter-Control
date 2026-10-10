@@ -42,7 +42,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'iPad companion compilation failed' }
           New-Item -ItemType Directory -Force -Path ipad-app/publish/bin | Out-Null
           Copy-Item com.noobatwork.voicemeeter.sdPlugin/bridge.ps1 ipad-app/publish/bin/bridge.ps1
-          foreach ($file in @('NoobatWork-iPad-Mixer.exe','bin/NoobatWorkAudioSessions.exe','bin/bridge.ps1','wwwroot/index.html','wwwroot/style.css','wwwroot/app.js')) {
+          foreach ($file in @('NoobatWork-iPad-Mixer.exe','bin/NoobatWorkAudioSessions.exe','bin/bridge.ps1','wwwroot/index.html','wwwroot/style.css','wwwroot/app.js','wwwroot/favorites.js')) {
             if (-not(Test-Path (Join-Path 'ipad-app/publish' $file))) { throw "Missing published app file: $file" }
           }
       - name: Validate browser UI JavaScript and offline assets
@@ -50,6 +50,9 @@ jobs:
         run: |
           node --check ipad-app/wwwroot/app.js
           node --check ipad-app/tests/smoke.cjs
+          node --check ipad-app/tests/multi-client.cjs
+          node --check ipad-app/wwwroot/favorites.js
+          node --test ipad-app/tests/favorites.test.cjs
           if grep -R -E 'googleapis|jsdelivr|unpkg|cdnjs|<script[[:space:]]+src="https' ipad-app/wwwroot; then
             echo "Unexpected external CDN dependency" >&2
             exit 1
@@ -77,6 +80,8 @@ jobs:
             if(-not $online){throw "iPad HTTP server did not start. $([IO.File]::ReadAllText($errorLog))"}
             node ipad-app/tests/smoke.cjs
             if($LASTEXITCODE -ne 0){throw 'iPad HTTP/Pairing/WebSocket smoke test failed'}
+            node ipad-app/tests/multi-client.cjs
+            if($LASTEXITCODE -ne 0){throw 'Simultaneous iPad and Android connections failed'}
           }
           finally {
             if(-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
@@ -96,20 +101,20 @@ jobs:
           if (-not (Test-Path $iscc)) { throw 'ISCC.exe not available' }
           & $iscc 'ipad-app/installer/NoobatWork-iPad.iss'
           if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed' }
-          $installer = Get-ChildItem -Path ipad-app -Recurse -File -Filter 'NoobatWork-iPad-Mixer-v0.1.1-preview-Setup.exe' | Select-Object -First 1
+          $installer = Get-ChildItem -Path ipad-app -Recurse -File -Filter 'NoobatWork-iPad-Mixer-v0.1.2-preview-Setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Missing Setup.exe output' }
-          Copy-Item -LiteralPath $installer.FullName -Destination 'NoobatWork-iPad-Mixer-v0.1.1-preview-Setup.exe'
+          Copy-Item -LiteralPath $installer.FullName -Destination 'NoobatWork-iPad-Mixer-v0.1.2-preview-Setup.exe'
       - name: Publish separate iPad Preview release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = 'v0.1.1-ipad-preview'
+          $tag = 'v0.1.2-ipad-preview'
           $existing = @(gh release list --limit 100 --json tagName | ConvertFrom-Json | Where-Object { $_.tagName -eq $tag })
           if ($LASTEXITCODE -ne 0) { throw 'Could not query releases' }
           if($existing.Count -eq 0) {
-            gh release create $tag --prerelease --title 'iPad Edition v0.1.1 – Low Latency Faders' --notes 'Performance preview: faster per-app control without rescanning all icons on each gain write, immediate touch feedback, coalesced final slider values, optimistic live status handling. Separate from unchanged working Stream Deck plugin. Test on your iPad.'
+            gh release create $tag --prerelease --title 'iPad Edition v0.1.2 – Auto / Split / Full + Favorites' --notes 'Multitasking preview: per-device layout selector (automatic, compact Split View, fullscreen), saved channel favorites and ordering, concurrent connections from iPad and Android browsers. Proven v0.1.1 fast slider path retained; Stream Deck v0.6 unchanged. Physical iPad/Android validation requested.'
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
           }
-          gh release upload $tag 'NoobatWork-iPad-Mixer-v0.1.1-preview-Setup.exe' 'NoobatWork-iPad-Mixer-v0.1.1-preview.zip' --clobber
+          gh release upload $tag 'NoobatWork-iPad-Mixer-v0.1.2-preview-Setup.exe' 'NoobatWork-iPad-Mixer-v0.1.2-preview.zip' --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Release asset upload failed' }
