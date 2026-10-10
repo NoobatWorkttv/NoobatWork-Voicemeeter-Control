@@ -56,6 +56,7 @@ function renderApplication(ctx,item){
  const volume=typeof data?.volume==='number'?data.volume:0;
  const level=Math.max(0,Math.min(100,Math.round(volume*100)));
  const mute=!!data?.mute;
+ const mode=saved.muteGesture==='tapHold'?'tapHold':'doubleTap';
  const active=appReady&&!!data;
  const color=mute?'#fb7185':'#2dd4b6';
  const body=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">',
@@ -66,7 +67,7 @@ function renderApplication(ctx,item){
  '<text x="72" y="93" text-anchor="middle" font-family="Arial" font-size="10" fill="#b4cbd3">TAP +  |  HOLD −</text>',
  '<rect x="15" y="114" width="114" height="10" rx="4" fill="#3a5260"/>',
  '<rect x="15" y="114" width="'+(114*level/100)+'" height="10" rx="4" fill="'+color+'"/>',
- '<text x="72" y="139" text-anchor="middle" font-family="Arial" font-size="9" fill="#c7d5e5">2× TIP = MUTE</text></svg>'];
+ '<text x="72" y="139" text-anchor="middle" font-family="Arial" font-size="9" fill="#c7d5e5">'+(mode==='tapHold'?'TAP + HOLD = MUTE':'2× TIP = MUTE')+'</text></svg>'];
  const image='data:image/svg+xml,'+encodeURIComponent(body.join(''));
  if(lastImage.get(ctx)!==image){lastImage.set(ctx,image);send({event:'setImage',context:ctx,payload:{image,target:0}});}
 }
@@ -85,6 +86,7 @@ function makeImage(action,s,base){
  const valid=online&&gotGain;
  const status=!online?'OFFLINE':!gotGain?'-- dB':mute?'MUTED':gainText(gain);
  const compact=action.endsWith('.compact');
+ const mode=s.muteGesture==='tapHold'?'tapHold':'doubleTap';
  const muteAction=action.endsWith('.mute');
  const segment=action.endsWith('.segment');
  const activeSegment=valid&&gain>=model.segmentGain(s)-.1;
@@ -102,7 +104,7 @@ function makeImage(action,s,base){
    parts.push('<text x="72" y="80" text-anchor="middle" font-family="Arial" font-size="10" fill="#b5e9df">TAP +  |  HOLD −</text>');
    parts.push('<rect x="14" y="98" width="116" height="9" rx="3" fill="#38495b"/>');
    parts.push('<rect x="14" y="98" width="'+(116*gp/100)+'" height="9" rx="3" fill="'+c+'"/>');
-   parts.push('<text x="72" y="117" text-anchor="middle" font-size="9" font-family="Arial" fill="#c7d5e5">FADER  ·  2× MUTE</text>');
+   parts.push('<text x="72" y="117" text-anchor="middle" font-size="9" font-family="Arial" fill="#c7d5e5">'+(mode==='tapHold'?'TAP + HOLD · MUTE':'FADER · 2× MUTE')+'</text>');
  }else if(segment){
    const target=model.segmentGain(s);
    parts.push('<rect x="14" y="34" width="116" height="65" rx="12" stroke="'+(activeSegment?c:'#566476')+'" stroke-width="3" fill="'+(activeSegment?'#225b58':'#253044')+'"/>');
@@ -212,7 +214,7 @@ function compactGesture(ctx,gesture){
  const next=Math.round(model.clamp(gain+delta,-60,12)*10)/10;
  setParam(base+'.Gain',next);
 }
-const compactGestures=createCompactGestures(compactGesture);
+const compactGestures=createCompactGestures(compactGesture,{getMode:ctx=>active.get(ctx)?.settings?.muteGesture==='tapHold'?'tapHold':'doubleTap'});
 function keyDown(message){
  const entry=active.get(message.context);
  if(!entry)return;
