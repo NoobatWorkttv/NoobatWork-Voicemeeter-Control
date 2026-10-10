@@ -10,6 +10,7 @@ DisableDirPage=yes
 CreateAppDir=no
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
+SourceDir=..
 OutputDir=dist
 OutputBaseFilename=NoobatWork-Voicemeeter-Control-v0.5.0-alpha-Setup
 Compression=lzma2
