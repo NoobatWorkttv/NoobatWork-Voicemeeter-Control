@@ -156,3 +156,37 @@ test('application inspector discovers sessions and persists selected executable'
     payload:{type:'settings-confirmed',settings:msg.payload}});
   assert.equal(elements.status.textContent,'✓ Gespeichert');
 });
+
+test('existing mixer keys use classical double tap until explicitly changed',()=>{
+  const {socket,elements}=launchInspector('com.noobatwork.voicemeeter.compact');
+  assert.equal(elements['mute-gesture-wrapper'].hidden,false);
+  assert.equal(elements.muteGesture.value,'doubleTap');
+  elements.channel.value='Strip:7';
+  elements.channel.emit('change');
+  assert.equal(socket.sent.at(-1).payload.muteGesture,'doubleTap');
+});
+
+test('compact mixer can select tap then hold mode; settings persist and confirm',()=>{
+  const {socket,elements,action}=launchInspector('com.noobatwork.voicemeeter.compact');
+  elements.muteGesture.value='tapHold';
+  elements.muteGesture.emit('change');
+  const saved=socket.sent.at(-1);
+  assert.equal(saved.event,'setSettings');
+  assert.equal(saved.context,'inspector-uuid');
+  assert.equal(saved.payload.muteGesture,'tapHold');
+  socket.recv({event:'sendToPropertyInspector',action,context:'instance',payload:{
+    type:'settings-confirmed',settings:saved.payload
+  }});
+  assert.equal(elements.muteGesture.value,'tapHold');
+  assert.equal(elements.status.textContent,'✓ Gespeichert');
+});
+
+test('app mixer exposes gesture selector; mute action does not',()=>{
+  const app=launchInspector('com.noobatwork.voicemeeter.app');
+  assert.equal(app.elements['mute-gesture-wrapper'].hidden,false);
+  app.elements.muteGesture.value='tapHold';
+  app.elements.muteGesture.emit('change');
+  assert.equal(app.socket.sent.at(-1).payload.muteGesture,'tapHold');
+  const mute=launchInspector('com.noobatwork.voicemeeter.mute');
+  assert.equal(mute.elements['mute-gesture-wrapper'].hidden,true);
+});
