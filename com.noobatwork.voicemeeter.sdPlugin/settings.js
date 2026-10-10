@@ -4,6 +4,10 @@
   const label = document.getElementById('label');
   const step = document.getElementById('step');
   const stepWrapper = document.getElementById('step-wrapper');
+  const segmentWrapper = document.getElementById('segment-wrapper');
+  const segment = document.getElementById('segment');
+  const minGain = document.getElementById('minGain');
+  const maxGain = document.getElementById('maxGain');
   const status = document.getElementById('status');
   const channels = [
     {group:'Eingänge · Hardware', options:Array.from({length:5},(_,i)=>({value:'Strip:'+i,text:'Hardware Input '+(i+1)}))},
@@ -25,29 +29,39 @@
   const normalize=s=>{
     s=s||{};
     const index=Number(s.index), n=Number(s.step);
+    const seg=Number(s.segment), min=Number(s.minGain), max=Number(s.maxGain);
+    const gainLow=s.minGain!==undefined&&Number.isFinite(min)?Math.max(-60,Math.min(11,min)):-40;
+    const gainHigh=s.maxGain!==undefined&&Number.isFinite(max)?Math.max(gainLow+1,Math.min(12,max)):Math.max(0,gainLow+1);
     return {
       group:s.group==='Bus'?'Bus':'Strip',
       index:Number.isFinite(index)?Math.max(0,Math.min(7,Math.trunc(index))):0,
       label:typeof s.label==='string'?s.label.slice(0,24):'',
-      step:Number.isFinite(n)&&n>0?Math.max(.1,Math.min(12,n)):2
+      step:Number.isFinite(n)&&n>0?Math.max(.1,Math.min(12,n)):2,
+      segment:Number.isFinite(seg)?Math.max(1,Math.min(5,Math.trunc(seg))):1,
+      minGain:gainLow,
+      maxGain:gainHigh
     };
   };
   const equals=(a,b)=>{
     a=normalize(a);b=normalize(b);
-    return a.group===b.group&&a.index===b.index&&a.label===b.label&&a.step===b.step;
+    return a.group===b.group&&a.index===b.index&&a.label===b.label&&a.step===b.step&&a.segment===b.segment&&a.minGain===b.minGain&&a.maxGain===b.maxGain;
   };
   function applySettings(s) {
     settings=normalize(s);
     channel.value=settings.group+':'+settings.index;
     label.value=settings.label;
     step.value=String(settings.step);
+    segment.value=String(settings.segment);
+    minGain.value=String(settings.minGain);
+    maxGain.value=String(settings.maxGain);
   }
   function collect() {
     const selected=channel.value.split(':');
     const index=Number(selected[1]);
     return normalize({
       group:selected[0],index:Number.isFinite(index)?index:0,
-      label:label.value.trim(),step:Number(step.value)
+      label:label.value.trim(),step:Number(step.value),
+      segment:Number(segment.value),minGain:Number(minGain.value),maxGain:Number(maxGain.value)
     });
   }
   function save() {
@@ -66,6 +80,9 @@
     setTimeout(()=>{if(pending===thisSave)status.textContent='Speichern nicht bestätigt – Stream-Deck-Log prüfen';},5000);
   }
   channel.addEventListener('change',save);
+  segment.addEventListener('change',save);
+  minGain.addEventListener('change',save);
+  maxGain.addEventListener('change',save);
   step.addEventListener('change',save);
   label.addEventListener('change',()=>{clearTimeout(debounce);save();});
   label.addEventListener('input',()=>{
@@ -89,6 +106,7 @@
       if(!action) throw new Error('Aktions-ID fehlt');
       const keyIsStep=action.endsWith('.up')||action.endsWith('.down');
       stepWrapper.hidden=!keyIsStep;
+      segmentWrapper.hidden=!action.endsWith('.segment');
       applySettings(details.payload?.settings||{});
       ws=new WebSocket('ws://127.0.0.1:'+port);
       ws.onopen=()=>{
