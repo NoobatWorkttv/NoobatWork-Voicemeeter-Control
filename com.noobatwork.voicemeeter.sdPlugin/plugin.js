@@ -50,7 +50,15 @@ ws.onopen=()=>{send({event:reg,uuid});startBridge();};
 ws.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch{return;}
  if(m.event==='willAppear'){active.set(m.context,m.payload?.settings||{});paint(m.context,active.get(m.context));poll();}
  if(m.event==='willDisappear')active.delete(m.context);
- if(m.event==='didReceiveSettings'){active.set(m.context,m.payload?.settings||{});render();poll();}
+ if(m.event==='didReceiveSettings'){
+   const updated=m.payload?.settings||{};
+   if(active.has(m.context)){
+     active.set(m.context,updated);
+     render();poll();
+     // Acknowledge only after Stream Deck notified us of persisted settings.
+     send({event:'sendToPropertyInspector',context:m.context,payload:{type:'settings-confirmed',settings:updated}});
+   }
+ }
  if(m.event==='keyDown')press(m);
 };
 ws.onclose=()=>{child?.kill();process.exit(0);};
