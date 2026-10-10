@@ -2,11 +2,11 @@
 
 Open-Source Stream Deck Plugin für **Voicemeeter Potato** unter Windows – ohne Flask-Server. Auch für **Stream Deck Mobile auf dem iPad**.
 
-> **v0.3.0-alpha (experimentell):** Der bisherige Live-Fader, das Regeln per +/− und das Speichern der Kanalwahl wurden praktisch bestätigt. **Touch-Fader und echte Pegelanzeige sind neu und auf dem iPad / deinem Windows-PC noch nicht praktisch getestet.**
+> **v0.3.1-alpha (experimentell):** Der bisherige Live-Fader, das Regeln per +/− und das Speichern der Kanalwahl wurden praktisch bestätigt. **Touch-Fader und echte Pegelanzeige sind neu und auf dem iPad / Windows-PC noch nicht praktisch bestätigt. Die erste Version v0.3.0-alpha war wegen eines defekten PowerShell-Bridge-Skripts komplett offline; diese Version repariert das Skript und enthält eine Windows-PowerShell-Syntaxprüfung vor dem Release.**
 
 ## Download
 
-**[v0.3.0-alpha als ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.3.0-alpha/NoobatWork-Voicemeeter-Control-v0.3.0-alpha.zip)**
+**[v0.3.1-alpha als ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.3.1-alpha/NoobatWork-Voicemeeter-Control-v0.3.1-alpha.zip)**
 
 ## Was ist neu?
 
@@ -31,6 +31,12 @@ Mit dem Standardbereich wählen die Tasten **−40, −30, −20, −10 und 0 dB
 - Die **große Fläche** des Segmentes signalisiert den eingestellten Pegel (der Faderwert).
 - Der **schmale Balken ganz unten** zeigt den aktuellen Audio-Signalpegel (dBFS). Wenn kein Ton läuft, bleibt dieser unten.
 - Bei Mute fällt der Post-Mute-Pegel der Eingänge ab. Bei Bussen kommt das Meter aus dem Output-Level der Voicemeeter API.
+
+## Hotfix v0.3.1-alpha
+
+Das Build von v0.3.0-alpha enthielt durch einen fehlerhaften Code-Patch eine syntaktisch beschädigte `bridge.ps1`. Die erneuerte Bridge baut auf der funktionierenden v0.2.1 auf. Die Audio-Pegelmessung wird isoliert abgefragt und darf Gain/Mute nicht blockieren. GitHub Actions validiert die Skriptsyntax jetzt unter **Windows PowerShell 5.1** und führt erst bei Erfolg die Linux-/Node-Tests und die Paketveröffentlichung aus.
+
+**Hinweis:** Die Windows-PowerShell-Prüfung erkennt Syntaxprobleme. Ob alle Audio-Pegel auf deinem Voicemeeter Potato korrekt ankommen, muss weiterhin am echten System geprüft werden.
 
 ## Installation und Update
 
