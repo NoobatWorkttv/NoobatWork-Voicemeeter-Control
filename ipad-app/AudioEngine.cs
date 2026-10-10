@@ -16,6 +16,9 @@ internal sealed class AudioEngine : IDisposable
     private DateTime nextAppStart = DateTime.MinValue, nextVmStart = DateTime.MinValue;
     private DateTime appRequested = DateTime.MinValue, vmRequested = DateTime.MinValue;
     private bool waitingApp, waitingVm, vmOnline;
+    private DateTime lastAppPoll = DateTime.MinValue, lastVmPoll = DateTime.MinValue;
+    // Latest-value wins: never enqueue 30 intermediate slider positions.
+    private readonly Dictionary<string, (bool app, string id, double value)> pendingGains = new();
     private JsonElement? appList;
     private readonly Dictionary<string, double> values = new();
     private readonly Dictionary<string, double> meters = new();
@@ -42,9 +45,13 @@ internal sealed class AudioEngine : IDisposable
                 if (!msg.TryGetProperty("type", out var t)) return;
                 lock (gate)
                 {
-                    waitingApp = false;
+                    // The fast iPad helper replies "ack" to writes. Only a
+                    // full "apps" response completes a pending discovery poll.
                     if (t.GetString() == "apps" && msg.TryGetProperty("apps", out var list) && list.ValueKind == JsonValueKind.Array)
+                    {
+                        waitingApp = false;
                         appList = list.Clone();
+                    }
                 }
             };
             appWorker.Start();
@@ -90,12 +97,23 @@ internal sealed class AudioEngine : IDisposable
             if (appWorker is null || !appWorker.Alive) { waitingApp = false; appWorker?.Dispose(); appWorker = null; StartApp(); }
             if (vmWorker is null || !vmWorker.Alive) { waitingVm = false; vmOnline = false; vmWorker?.Dispose(); vmWorker = null; StartVm(); }
             var now = DateTime.UtcNow;
-            if (appWorker?.Alive == true && (!waitingApp || (now - appRequested).TotalSeconds > 4))
+            // Deliver at most the most recent volume per key on every fast tick.
+            // Commands are sent before slow full status scans.
+            foreach (var (key, entry) in pendingGains.ToArray())
+            {
+                var success = entry.app
+                    ? (appWorker?.Send(new { op = "set", app = entry.id, value = entry.value / 100 }) ?? false)
+                    : (vmWorker?.Send(new { op = "set", path = entry.id + ".Gain", value = entry.value }) ?? false);
+                if (success) pendingGains.Remove(key);
+            }
+            if (appWorker?.Alive == true && now - lastAppPoll >= TimeSpan.FromMilliseconds(520) &&
+                (!waitingApp || (now - appRequested).TotalSeconds > 4))
             {
                 waitingApp = appWorker.Send(new { op = "list" });
-                appRequested = now;
+                appRequested = now;lastAppPoll = now;
             }
-            if (vmWorker?.Alive == true && (!waitingVm || (now - vmRequested).TotalSeconds > 4))
+            if (vmWorker?.Alive == true && now - lastVmPoll >= TimeSpan.FromMilliseconds(450) &&
+                (!waitingVm || (now - vmRequested).TotalSeconds > 4))
             {
                 var levels = ChannelKeys.Select(key => new
                 {
@@ -109,7 +127,7 @@ internal sealed class AudioEngine : IDisposable
                     paths = ChannelKeys.SelectMany(key => new[] { key + ".Gain", key + ".Mute" }),
                     meters = levels
                 });
-                vmRequested = now;
+                vmRequested = now;lastVmPoll = now;
             }
         }
     }
@@ -166,7 +184,9 @@ internal sealed class AudioEngine : IDisposable
                         return appWorker?.Send(new { op = "mute", app = id, value = mute }) ?? false;
                     }
                     if (!command.GetProperty("value").TryGetDouble(out var p) || !double.IsFinite(p) || p < 0 || p > 100) return false;
-                    return appWorker?.Send(new { op = "set", app = id, value = p / 100.0 }) ?? false;
+                    if (appWorker?.Alive != true) return false;
+                    pendingGains["app:"+id] = (true,id,p);
+                    return true;
                 }
             }
             if (target == "channel")
@@ -183,7 +203,13 @@ internal sealed class AudioEngine : IDisposable
                 {
                     if (!command.GetProperty("value").TryGetDouble(out v) || !double.IsFinite(v) || v < -60 || v > 12) return false;
                 }
-                lock (gate) return vmWorker?.Send(new { op = "set", path = id + "." + param, value = v }) ?? false;
+                lock (gate)
+                {
+                    if (op == "mute") return vmWorker?.Send(new { op = "set", path = id + "." + param, value = v }) ?? false;
+                    if (vmWorker?.Alive != true) return false;
+                    pendingGains["channel:"+id] = (false,id,v);
+                    return true;
+                }
             }
             return false;
         }
