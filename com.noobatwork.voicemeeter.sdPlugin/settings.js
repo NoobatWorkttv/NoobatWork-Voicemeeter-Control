@@ -16,58 +16,106 @@
     parent.label=group.group;
     for(const item of group.options) {
       const el=document.createElement('option');
-      el.value=item.value;el.textContent=item.text;parent.appendChild(el);
+      el.value=item.value; el.textContent=item.text; parent.appendChild(el);
     }
     channel.appendChild(parent);
   }
-  let ws,context,action;
+  let ws, context, action, pending=null, debounce;
   let settings={group:'Strip',index:0,label:'',step:2};
+  const normalize=s=>{
+    s=s||{};
+    const index=Number(s.index), n=Number(s.step);
+    return {
+      group:s.group==='Bus'?'Bus':'Strip',
+      index:Number.isFinite(index)?Math.max(0,Math.min(7,Math.trunc(index))):0,
+      label:typeof s.label==='string'?s.label.slice(0,24):'',
+      step:Number.isFinite(n)&&n>0?Math.max(.1,Math.min(12,n)):2
+    };
+  };
+  const equals=(a,b)=>{
+    a=normalize(a);b=normalize(b);
+    return a.group===b.group&&a.index===b.index&&a.label===b.label&&a.step===b.step;
+  };
   function applySettings(s) {
-    if (!s||typeof s!=='object') return;
-    const group=s.group==='Bus'?'Bus':'Strip';
-    const index=Math.min(7,Math.max(0,Number(s.index)||0));
-    const n=Number(s.step);
-    settings={group,index,label:typeof s.label==='string'?s.label:'',step:Number.isFinite(n)&&n>0?Math.min(12,n):2};
-    channel.value=group+':'+index;
+    settings=normalize(s);
+    channel.value=settings.group+':'+settings.index;
     label.value=settings.label;
     step.value=String(settings.step);
   }
-  function save() {
-    if(!ws||ws.readyState!==WebSocket.OPEN||!context||!action) return;
+  function collect() {
     const selected=channel.value.split(':');
-    const n=Number(step.value);
-    settings={
-      group:selected[0]==='Bus'?'Bus':'Strip',
-      index:Math.max(0,Math.min(7,Number(selected[1])||0)),
-      label:label.value.trim().slice(0,24),
-      step:Number.isFinite(n)?Math.min(12,Math.max(.1,n)):2
-    };
-    ws.send(JSON.stringify({event:'setSettings',action,context,payload:settings}));
-    status.textContent='Gespeichert';
+    const index=Number(selected[1]);
+    return normalize({
+      group:selected[0],index:Number.isFinite(index)?index:0,
+      label:label.value.trim(),step:Number(step.value)
+    });
   }
-  [channel,label,step].forEach(el=>el.addEventListener('change',save));
+  function save() {
+    if(!ws||ws.readyState!==WebSocket.OPEN||!context||!action) {
+      status.textContent='Nicht verbunden – bitte Taste erneut auswählen';
+      return;
+    }
+    settings=collect();
+    pending=settings;
+    // 'uuid' from connectElgatoStreamDeckSocket is the UI context the
+    // property inspector MUST use for setSettings/getSettings requests.
+    ws.send(JSON.stringify({event:'setSettings',action,context,payload:settings}));
+    status.textContent='Speichern …';
+  }
+  channel.addEventListener('change',save);
+  step.addEventListener('change',save);
+  label.addEventListener('change',()=>{clearTimeout(debounce);save();});
+  label.addEventListener('input',()=>{
+    clearTimeout(debounce);
+    status.textContent='Änderung noch nicht bestätigt';
+    debounce=setTimeout(save,350);
+  });
+  step.addEventListener('input',()=>{
+    clearTimeout(debounce);
+    status.textContent='Änderung noch nicht bestätigt';
+    debounce=setTimeout(save,350);
+  });
+
   window.connectElgatoStreamDeckSocket=(port,uuid,event,info,actionInfo)=>{
-    const details=JSON.parse(actionInfo);
-    context=details.context||uuid;
-    action=details.action;
-    const keyIsStep=action?.endsWith('.up')||action?.endsWith('.down');
-    stepWrapper.hidden=!keyIsStep;
-    applySettings(details.payload?.settings||{});
-    ws=new WebSocket('ws://127.0.0.1:'+port);
-    ws.onopen=()=>{
-      ws.send(JSON.stringify({event,uuid}));
-      ws.send(JSON.stringify({event:'getSettings',action,context}));
-      status.textContent='Verbunden · Einstellungen werden gespeichert';
-    };
-    ws.onmessage=e=>{
-      try {
-        const msg=JSON.parse(e.data);
-        if(msg.event==='didReceiveSettings'&&msg.context===context){
-          applySettings(msg.payload?.settings||{});
-        }
-      } catch {status.textContent='Einstellungen konnten nicht gelesen werden';}
-    };
-    ws.onclose=()=>{status.textContent='Nicht verbunden';};
-    ws.onerror=()=>{status.textContent='Verbindungsfehler';};
+    try {
+      const details=JSON.parse(actionInfo);
+      // IMPORTANT: details.context is NOT guaranteed to be the UI context;
+      // the 2nd callback argument is explicitly the inspector's context.
+      context=uuid;
+      action=details.action;
+      if(!action) throw new Error('Aktions-ID fehlt');
+      const keyIsStep=action.endsWith('.up')||action.endsWith('.down');
+      stepWrapper.hidden=!keyIsStep;
+      applySettings(details.payload?.settings||{});
+      ws=new WebSocket('ws://127.0.0.1:'+port);
+      ws.onopen=()=>{
+        ws.send(JSON.stringify({event,uuid}));
+        ws.send(JSON.stringify({event:'getSettings',action,context}));
+        status.textContent='Verbunden · Einstellungen geladen';
+      };
+      ws.onmessage=e=>{
+        try {
+          const msg=JSON.parse(e.data);
+          if(msg.event==='didReceiveSettings'&&msg.action===action) {
+            // Never overwrite a newer local change with a delayed getSettings response.
+            if(!pending) applySettings(msg.payload?.settings||{});
+          }
+          if(msg.event==='sendToPropertyInspector'&&msg.action===action&&msg.payload?.type==='settings-confirmed') {
+            const confirmed=msg.payload.settings||{};
+            if(pending&&equals(pending,confirmed)){
+              pending=null;
+              applySettings(confirmed);
+              status.textContent='✓ Gespeichert';
+            } else if(!pending) {
+              applySettings(confirmed);
+            }
+          }
+        }catch(err){status.textContent='Antwort konnte nicht verarbeitet werden';}
+      };
+      ws.onclose=()=>{status.textContent='Nicht verbunden';};
+      ws.onerror=()=>{status.textContent='Verbindungsfehler';};
+    } catch(err) {
+      status.textContent='Einstellungen konnten nicht gestartet werden: '+err.message;
+    }
   };
 })();
