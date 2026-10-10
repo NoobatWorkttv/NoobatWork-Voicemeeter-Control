@@ -78,3 +78,37 @@ test('per-key label and dB step are persisted together with channel',()=>{
   assert.equal(s.label,'Discord');
   assert.equal(s.step,0.5);
 });
+
+
+test('touch fader inspector persists segment index and range per key',()=>{
+  const {socket,elements,action}=launchInspector('com.noobatwork.voicemeeter.segment');
+  assert.equal(elements['segment-wrapper'].hidden,false);
+  assert.equal(elements['step-wrapper'].hidden,true);
+  elements.channel.value='Strip:5';
+  elements.segment.value='4';
+  elements.minGain.value='-40';
+  elements.maxGain.value='0';
+  elements.label.value='Game';
+  elements.channel.emit('change');
+  const saved=socket.sent.at(-1);
+  assert.equal(saved.event,'setSettings');
+  assert.equal(saved.action,action);
+  assert.equal(saved.context,'inspector-uuid');
+  assert.equal(saved.payload.group,'Strip');
+  assert.equal(saved.payload.index,5);
+  assert.equal(saved.payload.segment,4);
+  assert.equal(saved.payload.minGain,-40);
+  assert.equal(saved.payload.maxGain,0);
+  assert.equal(saved.payload.label,'Game');
+  socket.recv({event:'sendToPropertyInspector',action,context:'action-instance',payload:{
+    type:'settings-confirmed',settings:saved.payload
+  }});
+  assert.equal(elements.status.textContent,'✓ Gespeichert');
+  assert.equal(elements.segment.value,'4');
+});
+
+test('standalone mute key hides step and touch fader configuration',()=>{
+  const {elements}=launchInspector('com.noobatwork.voicemeeter.mute');
+  assert.equal(elements['step-wrapper'].hidden,true);
+  assert.equal(elements['segment-wrapper'].hidden,true);
+});
