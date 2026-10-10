@@ -3,8 +3,8 @@
   "Name": "NoobatWork Voicemeeter Control",
   "Category": "NoobatWork Voicemeeter",
   "Author": "NoobatWork",
-  "Description": "Voicemeeter live faders plus auto-discovered per-app WASAPI volume and mute",
-  "Version": "0.5.1.0",
+  "Description": "Hybrid UI: per-app icons, level meters, three themes, Voicemeeter and application mixer",
+  "Version": "0.6.0.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "7.1"
