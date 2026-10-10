@@ -19,7 +19,7 @@ def png(size,kind):
 for name,size in [('plugin',256),('plugin@2x',512),('category',28),('category@2x',56),('action',20),('action@2x',40),('key',72),('key@2x',144)]:
     (root/(name+'.png')).write_bytes(png(size,name.split('@')[0]))
 m=json.loads(Path("com.noobatwork.voicemeeter.sdPlugin/manifest.json").read_text(encoding='utf8'))
-assert m["Version"] == "0.5.0.0"
+assert m["Version"] == "0.5.1.0"
 assert len({a["UUID"] for a in m["Actions"]})==len(m["Actions"])
 assert any(a["UUID"].endswith('.app') for a in m["Actions"])
 for name in [m["Icon"],m["CategoryIcon"]]+[i for a in m["Actions"] for i in [a["Icon"]]+[s["Image"] for s in a["States"]]]:
