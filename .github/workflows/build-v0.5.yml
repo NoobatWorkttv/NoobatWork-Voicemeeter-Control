@@ -50,12 +50,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Audio helper process exited with error' }
           Write-Host "Headless Windows helper response: $reply"
           $obj = $reply | ConvertFrom-Json
-          if ($obj.type -ne 'apps' -and $obj.type -ne 'error') { throw 'Audio helper returned an invalid protocol response' }
-          if ($obj.type -eq 'error') {
-            Write-Host "No interactive sound endpoint on CI runner (expected possibility); protocol remains responsive."
-          } else {
-            Write-Host "Application discovery protocol OK: $(@($obj.apps).Count) sessions on runner"
-          }
+          if ($obj.type -ne 'apps') { throw "Audio helper did not return a valid apps response: $reply" }
+          Write-Host "Application discovery protocol OK: $(@($obj.apps).Count) sessions on runner"
       - name: Smoke-test automatic update and backup (isolated APPDATA)
         shell: powershell
         run: |
