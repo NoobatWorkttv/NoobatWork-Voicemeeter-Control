@@ -10,11 +10,13 @@ const active=new Map(),cache=new Map();
 function send(x){if(ws?.readyState===1)ws.send(JSON.stringify(x));}
 function bridge(x){if(child?.stdin?.writable)child.stdin.write(JSON.stringify(x)+'\n');}
 function channel(s){return (s?.group==='Bus'?'Bus':'Strip')+'['+Math.max(0,Math.min(7,Number(s?.index)||0))+']';}
+function defaultLabel(s){const i=Math.max(0,Math.min(7,Number(s?.index)||0));return s?.group==='Bus'?(i<5?'A'+(i+1):'B'+(i-4)):(i<5?'Input '+(i+1):'Virtual '+(i-4));}
+function escapeXML(text){return String(text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
 function paint(ctx,a){
- const base=channel(a),gain=cache.get(base+'.Gain')??-60,mute=cache.get(base+'.Mute')===1;
+ const base=channel(a),known=cache.has(base+'.Gain'),gain=known?cache.get(base+'.Gain'):-60,mute=cache.get(base+'.Mute')===1;
  const pct=Math.max(0,Math.min(100,(gain+60)/72*100));
- const title=String(a.label||base).slice(0,18).replace(/[<&>"']/g,'');
- const v=online?(mute?'MUTED':gain.toFixed(1)+' dB'):'OFFLINE';
+ const title=escapeXML(String(a.label||defaultLabel(a)).slice(0,18));
+ const v=online?(known?(mute?'MUTED':gain.toFixed(1)+' dB'):'-- dB'):'OFFLINE';
  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144"><rect width="144" height="144" fill="#101927"/><text x="72" y="24" text-anchor="middle" font-size="15" fill="white">'+title+'</text><rect x="62" y="37" width="20" height="80" fill="#3c4b58"/><rect x="62" y="'+(117-pct*.8)+'" width="20" height="'+(pct*.8)+'" fill="'+(mute?'#fb7185':'#21bfa5')+'"/><text x="72" y="138" text-anchor="middle" font-size="14" fill="white">'+v+'</text></svg>';
  send({event:'setImage',context:ctx,payload:{image:'data:image/svg+xml,'+encodeURIComponent(svg),target:0}});
 }
@@ -32,8 +34,15 @@ function poll(){if(!active.size)return;if(!child){startBridge();return;}const pa
 function press(ev){
  const a=active.get(ev.context);if(!a)return;
  const c=channel(a),gain=cache.get(c+'.Gain'),mute=cache.get(c+'.Mute')||0;
- if(ev.action.endsWith('.fader'))bridge({op:'set',path:c+'.Mute',value:mute?0:1});
- else if(Number.isFinite(gain))bridge({op:'set',path:c+'.Gain',value:Math.max(-60,Math.min(12,gain+(ev.action.endsWith('.up')?2:-2)))});
+ if(ev.action.endsWith('.fader')){
+   const next=mute?0:1;
+   cache.set(c+'.Mute',next);bridge({op:'set',path:c+'.Mute',value:next});render();
+ }else if(Number.isFinite(gain)){
+   const n=Number(a.step);
+   const step=Number.isFinite(n)&&n>=.1?Math.min(12,n):2;
+   const next=Math.max(-60,Math.min(12,gain+(ev.action.endsWith('.up')?step:-step)));
+   cache.set(c+'.Gain',next);bridge({op:'set',path:c+'.Gain',value:next});render();
+ }
  setTimeout(poll,130);
 }
 ws=new WebSocket('ws://127.0.0.1:'+port);
