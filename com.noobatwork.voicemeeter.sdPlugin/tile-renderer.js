@@ -26,7 +26,7 @@ function accentFor(kind,label,settings={}){
  return '#42cdb4';
 }
 function safeIcon(icon){
- return typeof icon==='string'&&/^data:image\/png;base64,[A-Za-z0-9+/=]{80,38000}$/.test(icon)?icon:null;
+ return typeof icon==='string'&&/^data:image\/png;base64,iVBORw0KGgo[A-Za-z0-9+/=]{70,38000}$/.test(icon)?icon:null;
 }
 function percentRect(p,y,height,color){
  const w=Math.round(clamp(p,0,100)*114/100);
