@@ -3,9 +3,24 @@
   const $=id=>document.getElementById(id);
   const channels=$('channels'),empty=$('empty'),overlay=$('pair-overlay'),pairForm=$('pair-form');
   const tabButtons=[...document.querySelectorAll('[data-tab]')];
+  const Favorite=window.NAWFavorites;
+  const layoutSelect=$('layout-mode');
+  const layoutKey='naw-ipad-layout-v1';
+  const allowedLayouts=['auto','split','full'];
+  let preferredLayout='auto';
+  try{preferredLayout=localStorage.getItem(layoutKey)||'auto';}catch{}
+  if(!allowedLayouts.includes(preferredLayout))preferredLayout='auto';
+  layoutSelect.value=preferredLayout;
+  document.documentElement.dataset.layout=preferredLayout;
+  layoutSelect.addEventListener('change',()=>{
+    const value=allowedLayouts.includes(layoutSelect.value)?layoutSelect.value:'auto';
+    document.documentElement.dataset.layout=value;
+    try{localStorage.setItem(layoutKey,value);}catch{}
+  });
   const client={token:localStorage.getItem('naw-ipad-token')||'',socket:null,connected:false,
     tab:'all',state:{apps:[],channels:[],vmOnline:false,appOnline:false},cards:new Map(),
-    reconnect:null,reconnectMs:750,master:null};
+    reconnect:null,reconnectMs:750,master:null,
+    favorites:Favorite.load(localStorage),editing:false};
   const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
   const pct=n=>clamp(Number(n)||0,0,100);
   const iconPath='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm13-1 3 3m0-3-3 3m-1 2 4 4"/></svg>';
@@ -112,10 +127,21 @@
       const selected=btn.dataset.tab===tab;
       btn.classList.toggle('selected',selected);btn.setAttribute('aria-pressed',String(selected));
     }
-    $('heading').textContent=tab==='apps'?'Anwendungen':tab==='channels'?'Voicemeeter':'Dein Live-Mixer';
+    $('heading').textContent=tab==='apps'?'Anwendungen':tab==='channels'?'Voicemeeter':tab==='favorites'?'Deine Favoriten':'Dein Live-Mixer';
     paint();
   }
   for(const btn of tabButtons)btn.addEventListener('click',()=>setTab(btn.dataset.tab));
+  const editFavorites=$('edit-favorites');
+  editFavorites.addEventListener('click',()=>{
+    client.editing=!client.editing;
+    editFavorites.setAttribute('aria-pressed',String(client.editing));
+    editFavorites.textContent=client.editing?'✓ Fertig':'★ Favoriten bearbeiten';
+    paint();
+  });
+  function storeFavorites(next){
+    client.favorites=Favorite.save(localStorage,next);
+    paint();
+  }
 
   function currentItems(){
     const state=client.state||{};
@@ -139,9 +165,10 @@
       };
       return priority(a)-priority(b);
     });
-    if(client.tab==='apps')return apps;
-    if(client.tab==='channels')return channelItems;
-    return [...apps,...channelItems];
+    if(client.tab==='apps')return Favorite.arrange(apps,client.favorites,'all');
+    if(client.tab==='channels')return Favorite.arrange(channelItems,client.favorites,'all');
+    const all=[...apps,...channelItems];
+    return Favorite.arrange(all,client.favorites,client.tab==='favorites'&&!client.editing?'favorites':'all');
   }
 
   function createCard(item){
@@ -180,9 +207,17 @@
       latest.muted=next;updateCard(root,latest);
     });
     controls.append(mute);
+    const favTools=document.createElement('div');favTools.className='fav-tools';
+    const favorite=document.createElement('button');favorite.type='button';favorite.className='fav-toggle';favorite.title='Als Favorit speichern oder entfernen';
+    const left=document.createElement('button');left.type='button';left.className='fav-move';left.textContent='←';left.title='Favorit nach links verschieben';
+    const right=document.createElement('button');right.type='button';right.className='fav-move';right.textContent='→';right.title='Favorit nach rechts verschieben';
+    favorite.addEventListener('click',()=>storeFavorites(Favorite.toggle(client.favorites,targetKey(root._item))));
+    left.addEventListener('click',()=>storeFavorites(Favorite.move(client.favorites,targetKey(root._item),-1)));
+    right.addEventListener('click',()=>storeFavorites(Favorite.move(client.favorites,targetKey(root._item),1)));
+    favTools.append(left,favorite,right);
     const meta=document.createElement('div');meta.className='channel-meta';
-    root.append(top,reading,area,controls,meta);
-    root._ui={logo,title,subtitle,value,detail,fill,knob,levels,slider,scale,mute,meta};
+    root.append(top,reading,area,controls,favTools,meta);
+    root._ui={logo,title,subtitle,value,detail,fill,knob,levels,slider,scale,mute,meta,favTools,favorite,left,right};
     root._dragging=false;root._lastWrite=0;root._heldUntil=0;root._lastLit=-1;root._dragRect=null;
     slider.addEventListener('pointerdown',e=>{
       if(!client.connected||!root._item?.online)return;
@@ -285,12 +320,21 @@
     }
     u.mute.setAttribute('aria-pressed',String(item.muted));
     u.mute.querySelector('span').textContent=item.muted?'UNMUTE':'MUTE';
-    u.meta.textContent=item.type==='app'?item.id.toUpperCase():item.id.toUpperCase();
+    u.meta.textContent=item.id.toUpperCase();
+    const rank=client.favorites.indexOf(targetKey(item));
+    u.favTools.hidden=!client.editing;
+    u.favorite.textContent=rank>=0?'★':'☆';
+    u.favorite.setAttribute('aria-label',rank>=0?item.name+' aus Favoriten entfernen':item.name+' zu Favoriten hinzufügen');
+    u.favorite.classList.toggle('pinned',rank>=0);
+    u.left.disabled=rank<=0;
+    u.right.disabled=rank<0||rank>=client.favorites.length-1;
   }
 
   function paint(){
     const items=currentItems();
     $('empty').hidden=items.length>0;
+    $('empty').querySelector('strong').textContent=client.tab==='favorites'?'Noch keine Favoriten':'Keine aktiven Audiokanäle';
+    $('empty-hint').textContent=client.tab==='favorites'?'Tippe auf „★ Favoriten bearbeiten“, wähle die gewünschten Kanäle und ordne sie mit den Pfeilen.':'Starte auf deinem Windows-PC eine Anwendung mit Tonausgabe oder wähle „Hardware“.';
     const seen=new Set();
     for(const item of items){
       const key=targetKey(item);seen.add(key);
