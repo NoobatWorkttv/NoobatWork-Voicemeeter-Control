@@ -1,19 +1,32 @@
 # NoobatWork – Voicemeeter Control 🎛️
 
-Windows-Plugin für **Stream Deck und Stream Deck Mobile (iPad)**. Steuert Voicemeeter Potato direkt und ab **v0.5.0-alpha** zusätzlich einzelne Windows-Audioanwendungen, auch wenn mehrere davon denselben Voicemeeter-VAIO3-Eingang verwenden.
+Windows-Plugin für **Stream Deck und Stream Deck Mobile (iPad)**. Steuert Voicemeeter Potato direkt und ab **v0.5.1-alpha** zusätzlich einzelne Windows-Audioanwendungen, auch wenn mehrere davon denselben Voicemeeter-VAIO3-Eingang verwenden.
 
-> **Version v0.5.0-alpha ist experimentell.** Die Voicemeeter-Steuerung und der Kompakt-Mixer waren bis einschließlich v0.4.0 auf dem Zielsystem erfolgreich getestet. **Die automatische Windows-App-Erkennung und der neue Setup.exe-Installer müssen noch auf einem echten Benutzer-PC ausprobiert werden.**
+> **v0.5.1-alpha – optionales Mute-Bedienexperiment.** Version v0.5.0-alpha (App-Erkennung, App-Fader und automatisches Setup) wurde auf dem Zielsystem erfolgreich getestet. v0.5.1-alpha ändert ausschließlich die wählbare Geste für App-Mixer und Kompakt-Mixer. Vorhandene Tasten behalten standardmäßig die klassische Doppeltipp-Steuerung.
 
 ## Download
 
-- **[v0.5.0-alpha Setup.exe herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.5.0-alpha/NoobatWork-Voicemeeter-Control-v0.5.0-alpha-Setup.exe)** – empfohlen: ein Klick, kein manuelles Beenden von Stream Deck mehr.
-- **[v0.5.0-alpha ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.5.0-alpha/NoobatWork-Voicemeeter-Control-v0.5.0-alpha.zip)** – alternative Installation über `INSTALL.bat`. Diese verwendet dieselbe automatische Installationsroutine.
+- **[v0.5.1-alpha Setup.exe herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.5.1-alpha/NoobatWork-Voicemeeter-Control-v0.5.1-alpha-Setup.exe)** – empfohlen: ein Klick, kein manuelles Beenden von Stream Deck mehr.
+- **[v0.5.1-alpha ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.5.1-alpha/NoobatWork-Voicemeeter-Control-v0.5.1-alpha.zip)** – alternative Installation über `INSTALL.bat`. Diese verwendet dieselbe automatische Installationsroutine.
 
 Der Installer ist noch **nicht digital signiert**. Windows SmartScreen kann deshalb beim ersten Start eine Warnung anzeigen. Lade ihn nur aus dem oben verlinkten offiziellen Projekt-Release herunter. **Keine Administratorrechte erforderlich.**
 
+## NEU v0.5.1-alpha: Zwei auswählbare Mute-Gesten
+
+Im Stream-Deck-Desktopeditor kannst du jetzt bei **App-Mixer** und **Kompakt-Mixer** pro Taste die **Mute-Bedienung** auswählen:
+
+| Modus | Schnelles Tippen | Lauter / Leiser | Mute |
+|---|---|---|---|
+| **Klassisch (Standard)** | Zweiter schneller Tipp mutet | 1x tippen / halten | 2x schnell tippen |
+| **Neu: Tap + Hold** | Jeder kurze Tipp macht sofort lauter, selbst bei schnellem Mehrfachtippen | Tippen / gewöhnlich halten | Einmal kurz tippen, danach den zweiten Tipp innerhalb von 280 ms mindestens 350 ms halten |
+
+**Zum Ausprobieren:** In Stream Deck eine vorhandene **App-Mixer**- oder **Kompakt-Mixer**-Taste wählen und unter **Mute-Bedienung** die zweite Option „Neu: kurz tippen, dann halten (350 ms)“ einstellen. Die Einstellung wird wie alle anderen pro Taste gespeichert. Beim ersten kurzen Tipp wird die Lautstärke sofort um eine Schrittweite erhöht; wenn der unmittelbar folgende Tipp gehalten wird, wird Mute umgeschaltet. Beim ersten langen Tastendruck wird nach 520 ms leiser geregelt; nach der Tap-Hold-Mute-Geste wird kein Leiser-Befehl ausgelöst.
+
+**Hinweis:** Kein echter Finger-Drag, sondern die vorhandenen Stream-Deck-`keyDown`-/`keyUp`-Ereignisse. Die neue Geste ist automatisiert, aber noch nicht auf deinem iPad getestet. Die alte und auf deinem iPad bestätigte Version findest du hier: [v0.5.0-alpha](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/tag/v0.5.0-alpha).
+
 ## Automatisches Update mit Setup.exe
 
-1. `NoobatWork-Voicemeeter-Control-v0.5.0-alpha-Setup.exe` starten.
+1. `NoobatWork-Voicemeeter-Control-v0.5.1-alpha-Setup.exe` starten.
 2. Der Installer beendet bei Bedarf Stream Deck automatisch, auch wenn es noch im Windows-Infobereich läuft.
 3. Die vorherige Plugin-Version wird unter `%APPDATA%\NoobatWork\VoicemeeterControl\Backups` gesichert; deine Stream-Deck-Profile liegen außerhalb dieses Plugin-Verzeichnisses und bleiben erhalten.
 4. Die neue Version wird installiert. Bei einem Installationsfehler versucht der Installer, die vorherige Version aus dem Backup wiederherzustellen.
@@ -28,7 +41,7 @@ Die neue Aktion **App-Mixer** verwendet einen **separaten Windows-Core-Audio-Hil
 3. Falls eine App nicht auftaucht: die Anwendung starten, kurz Ton abspielen und **Anwendungen neu suchen** anklicken.
 4. Weitere App-Mixer-Tasten für Discord, Opera GX, Firefox usw. anlegen und jeweils eine andere Anwendung auswählen.
 
-**Bedienung auf dem iPad:** Kurz tippen = Anwendung lauter, gedrückt halten = leiser, doppelt tippen = Mute an/aus. Die Schrittweite steht bei der App-Mixer-Aktion in **Prozentpunkten** (z. B. 2 %). Auf der Taste erscheinen App-Name, tatsächlicher Windows-Audiositzungs-Lautstärkewert in % und Mute-Status.
+**Bedienung auf dem iPad:** Kurz tippen = Anwendung lauter, gedrückt halten = leiser. Mute wird je nach ausgewähltem Modus durch Doppeltippen oder kurzes Tippen mit anschließendem Halten ausgelöst. Die Schrittweite steht bei der App-Mixer-Aktion in **Prozentpunkten** (z. B. 2 %). Auf der Taste erscheinen App-Name, tatsächlicher Windows-Audiositzungs-Lautstärkewert in % und Mute-Status.
 
 **Wichtig:** Der App-Mixer regelt den Windows-Audiositzungs-Lautstärkewert, nicht den gesamten Voicemeeter-Strip. Apps, die denselben `Strip[7]` / VAIO3 verwenden, können getrennt geregelt werden. Wenn ein Programm mehrere Audiositzungen oder Instanzen unter **demselben EXE-Namen** hat, werden sie gemeinsam gesteuert. Unterschiedliche EXE-Namen erhalten separate Regler.
 
@@ -53,6 +66,6 @@ Wenn eine Anwendung keine aktive Audiositzung hat, wird auf der Taste `OFFLINE` 
 - GitHub Actions kompiliert den Helfer unter Windows, überprüft die Windows-PowerShell-Installationsroutine, führt die Node-Tests aus, erstellt das ZIP und kompiliert das Setup mit Inno Setup.
 - Durch erfolgreiche CI-Tests wird die Funktion auf deinem echten Windows-System nicht automatisch bestätigt. Das prüfen wir gemeinsam.
 
-**Bewährte Rückfallversion:** [v0.4.0-alpha](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/tag/v0.4.0-alpha).
+**Bewährte Rückfallversion:** [v0.5.0-alpha](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/tag/v0.5.0-alpha).
 
 © 2026 NoobatWorkttv · [Elgato Stream Deck SDK](https://docs.elgato.com/streamdeck/sdk/) · [Microsoft Core Audio](https://learn.microsoft.com/en-us/windows/win32/coreaudio/core-audio-apis)
