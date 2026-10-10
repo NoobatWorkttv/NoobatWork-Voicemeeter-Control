@@ -1,49 +1,73 @@
 # NoobatWork – Voicemeeter Control 🎛️
 
-**Windows Stream Deck / Stream Deck Mobile** Plugin für direkte Steuerung von **Voicemeeter Potato**, ohne Flask oder weiteren Webserver.
+Open-Source Stream Deck Plugin für **Voicemeeter Potato** unter Windows – ohne Flask-Server. Auch für **Stream Deck Mobile auf dem iPad**.
 
-> **v0.2.1-alpha – experimenteller Testbuild.** Echtzeit-Steuerung und Darstellung von Strip 0 wurden durch einen Nutzer bereits praktisch bestätigt. Die Kanalauswahl wird in v0.2.1-alpha auf korrekte Speicherung und Rückmeldung überprüft; die neue Version ist noch nicht auf einem echten Windows-/iPad-System getestet.
+> **v0.3.0-alpha (experimentell):** Der bisherige Live-Fader, das Regeln per +/− und das Speichern der Kanalwahl wurden praktisch bestätigt. **Touch-Fader und echte Pegelanzeige sind neu und auf dem iPad / deinem Windows-PC noch nicht praktisch getestet.**
 
 ## Download
 
-**[v0.2.1-alpha ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.2.1-alpha/NoobatWork-Voicemeeter-Control-v0.2.1-alpha.zip)**
+**[v0.3.0-alpha als ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.3.0-alpha/NoobatWork-Voicemeeter-Control-v0.3.0-alpha.zip)**
 
-## Funktionen
+## Was ist neu?
 
-- Live-Fader: zeigt aktuellen Gain (dB), Mute-Status und Faderposition; Tippen schaltet Mute.
-- Lauter und Leiser: drücken verändert Gain um die eingestellte Schrittweite.
-- **Pro Taste frei wählbarer Kanal:** Hardware Input 1–5 (Strip 0–4), Virtual Input 1–3 (Strip 5–7), Output A1–A5 (Bus 0–4) oder Output B1–B3 (Bus 5–7).
-- **Pro Taste eigener Titel** und **Schrittweite 0,1–12,0 dB** für +/−.
-- Werte werden über die Voicemeeter Remote API live aktualisiert. Bei Änderungen in Voicemeeter folgt die Anzeige.
+- **Touch-Fader · Segment:** Fünf nebeneinanderliegende Tasten bilden einen anklickbaren Fader. Jede Taste legt einen Zielpegel fest und zeigt an, ob der aktuelle Fader darüber oder darunter liegt.
+- **Echter Live-Audiopegel:** Der farbige Balken am Fuß jeder Aktion zeigt den tatsächlichen Signalpegel, er wird unabhängig von der Gain-Faderposition über die Voicemeeter Remote API (`VBVMR_GetLevel`) gelesen.
+- **Mute:** Eigene Mute-Taste je Kanal; der Live-Fader kann nach wie vor per Tastendruck stummschalten.
+- **Vorhandene Aktionen:** Live-Fader, Lauter, Leiser bleiben erhalten, inklusive pro Taste konfigurierbarem Strip/Bus, Namen und Schrittweite.
 
-**Fehlerbehebung v0.2.1:** Der Property Inspector verwendet nun die von Stream Deck übergebene UI-Kontextkennung für `getSettings`/`setSettings`; die Anzeige „✓ Gespeichert“ erscheint erst, nachdem der Plugin-Prozess die von Stream Deck zurückgemeldeten Einstellungen erhalten hat. Wenn keine Bestätigung eintrifft, wird das angezeigt.
+### Fünf-Tasten-Fader auf dem iPad einrichten
 
-## Installation / Update
+1. In Stream Deck Mobile (bzw. in der Desktop-Konfiguration) **fünf freie Tasten nebeneinander** verwenden.
+2. Auf jede Taste die Aktion **Touch-Fader · Segment** ziehen.
+3. Jede dieser fünf Tasten anklicken und **denselben Kanal** wählen, z. B. Virtual Input 1.
+4. Unter **Fader-Segment / Position** für die fünf Tasten von links nach rechts **1 / 5, 2 / 5, 3 / 5, 4 / 5 und 5 / 5** einstellen.
+5. Auf allen Tasten denselben Minimum- und Maximumwert einstellen, standardmäßig **−40 bis 0 dB**.
+6. Wahlweise eine sechste Taste **Mute** hinzufügen und denselben Kanal zuweisen.
 
-1. Stream Deck Desktop **7.1+** und Voicemeeter Potato müssen installiert sein.
-2. ZIP herunterladen und **vollständig entpacken**.
-3. Stream Deck vollständig beenden, auch im Infobereich.
-4. `INSTALL.bat` ausführen. Ein vorhandenes Plugin wird unter `%APPDATA%\NoobatWork\VoicemeeterControl\Backups` gesichert; bei Kopierfehlern wird das Backup wiederhergestellt.
-5. Stream Deck starten, Aktion **Live-Fader**, **Lauter** oder **Leiser** hinzufügen.
-6. **Taste anklicken:** Im unteren Eigenschaftenbereich erscheinen die Dropdown-Kanalauswahl, Beschriftung und bei +/− die Schrittweite. Änderungen werden automatisch gespeichert.
+Mit dem Standardbereich wählen die Tasten **−40, −30, −20, −10 und 0 dB**. Das ist ein **diskreter Fader mit fünf Positionen**, kein kontinuierlicher Finger-Drag über das Display und auch kein Drag innerhalb einer einzelnen Taste. Er arbeitet auch auf einem regulären Stream Deck.
 
-**Wichtig:** `Strip[0]` ist Hardware Input 1, **nicht** Ausgang A1. A1 entspricht `Bus[0]`.
+### So erkennst du den Unterschied
 
-## Technik & Einschränkungen
+- Die **große Fläche** des Segmentes signalisiert den eingestellten Pegel (der Faderwert).
+- Der **schmale Balken ganz unten** zeigt den aktuellen Audio-Signalpegel (dBFS). Wenn kein Ton läuft, bleibt dieser unten.
+- Bei Mute fällt der Post-Mute-Pegel der Eingänge ab. Bei Bussen kommt das Meter aus dem Output-Level der Voicemeeter API.
 
-- Windows-Plugin mit Node.js und lokaler PowerShell/C#-Bridge zur Voicemeeter Remote API (`VoicemeeterRemote64.dll`).
-- Keine zusätzlichen NPM-Pakete oder externen Netzwerkserver.
-- Nur Voicemeeter Potato mit acht Strips und acht Bussen ist für diese Oberfläche vorgesehen.
-- Ein frei mit dem Finger ziehbarer Slider innerhalb einer einzelnen Stream Deck Mobile Taste und Stream Deck+ Encoder sind noch **nicht** implementiert. Die Anzeige aktualisiert sich jedoch beim Bewegen des Reglers in Voicemeeter.
-- Beta-Test: Bei Problemen bitte `%APPDATA%\Elgato\StreamDeck\logs\StreamDeck0.log` prüfen.
+## Installation und Update
 
-## Build / CI
+1. Voicemeeter Potato und Stream Deck Desktop **7.1 oder neuer** starten und prüfen, ob sie funktionieren.
+2. ZIP vollständig entpacken.
+3. **Stream Deck vollständig beenden**, einschließlich Tray-Symbol.
+4. `INSTALL.bat` ausführen. Alte Plugin-Dateien werden vor dem Kopieren automatisch gesichert unter `%APPDATA%\NoobatWork\VoicemeeterControl\Backups`.
+5. Stream Deck erneut starten und Plugin-Aktionen auswählen.
 
-GitHub Actions überprüft `plugin.js`, `settings.js`, das Manifest und die erforderlichen Icon-Dateien und erstellt das ZIP als **Pre-Release**. Der erfolgreiche Build ersetzt keinen Praxistest in Stream Deck und Voicemeeter.
+### Kanalzuordnung (Voicemeeter Potato)
 
-## Referenzen
+| Auswahl | Remote-API |
+|---|---|
+| Hardware Input 1–5 | Strip[0]–Strip[4] |
+| Virtual Input 1–3 | Strip[5]–Strip[7] |
+| Output A1–A5 | Bus[0]–Bus[4] |
+| Output B1–B3 | Bus[5]–Bus[7] |
 
-- [VB-Audio Voicemeeter SDK](https://github.com/vburel2018/Voicemeeter-SDK)
+Hinweis: **Hardware Input 1 ist Strip[0], nicht Bus A1.**
+
+## Technische Details
+
+- Node.js-Plugin mit lokaler PowerShell/C#-Bridge zu `VoicemeeterRemote64.dll`; keine Webdienste, Portfreigaben oder NPM-Pakete nötig.
+- `VBVMR_GetLevel`: Strip-Pegeltyp 2 (post mute), Bus-Pegeltyp 3 (output). Potato-Kanäle: Hardware-Strips jeweils 2 Audiokanäle, virtuelle Strips und Busse jeweils 8; der maximale lineare Wert wird zu dBFS umgerechnet.
+- Gemeinsame Abfrage der sichtbaren Kanäle, dynamische Stream-Deck-Tastenbilder mit 350-ms-Polling und Bild-Deduplizierung.
+- Bestehende Einstellungen bleiben durch gleiche Plugin- und Aktions-IDs erhalten.
+- Bei Problemen `%APPDATA%\Elgato\StreamDeck\logs\StreamDeck0.log` ansehen.
+
+**Bekannte Grenze:** Das Stream Deck Keypad SDK meldet Tastendrücke, kein kontinuierliches Verschieben innerhalb einer Taste. Echte Touch-Gesten sind auf dem Stream Deck+ Touch Strip eine andere API. Mehr als fünf feste Pegelstufen und weitere Fader-Bedienkonzepte können später ergänzt werden.
+
+## Automatisierte Tests und Build
+
+`node --test tests/*.test.cjs` prüft die Segment-Pegel, Potato-Channel-Offsets, Manifest-Aktionen und die Speicherung pro Taste. GitHub Actions baut und veröffentlicht das ZIP als Alpha-Release. Der CI-Test ersetzt keine Hardwareprüfung unter Windows oder auf dem iPad.
+
+## Quellen
+
+- [VB-Audio Voicemeeter Remote SDK](https://github.com/vburel2018/Voicemeeter-SDK)
 - [Elgato Stream Deck SDK](https://docs.elgato.com/streamdeck/sdk/)
 
-Lizenz: [MIT](LICENSE) · © 2026 NoobatWorkttv
+MIT-Lizenz · © 2026 NoobatWorkttv
