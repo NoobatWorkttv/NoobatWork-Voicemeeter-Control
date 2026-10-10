@@ -1,47 +1,47 @@
 # NoobatWork – Voicemeeter Control 🎛️
 
-Open-Source Stream-Deck-Plugin für die direkte Steuerung von **Voicemeeter Potato** unter Windows. Ziel: konfigurierbare Kanal-Fader auf Stream Deck und Stream Deck Mobile (iPad), ohne separaten Flask-Server.
+**Windows Stream Deck / Stream Deck Mobile** Plugin für direkte Steuerung von **Voicemeeter Potato**, ohne Flask oder weiteren Webserver.
 
-> **Status: v0.1.1-alpha – ungetesteter Entwicklungsstand.** Die eigentliche Windows-Voicemeeter- und iPad-Verbindung muss noch praktisch getestet werden. Dies ist noch keine fertige Stream-Deck-Marketplace-Erweiterung.
-
-## Geplante und prototypisch implementierte Aktionen
-
-- **Live-Fader:** Zeigt Gain in dB und Mute-Status für Strip 0, Tippen schaltet Mute um
-- **Lauter / Leiser:** Pegel in frei wählbaren dB-Schritten ändern
-- **Mute:** Kanal stummschalten oder wieder aktivieren
-- **Fader-Segment:** Für spätere Version geplant
-- **Stream Deck+:** Drehregler für eine spätere Version geplant
-
-### Technischer Ansatz
-
-Der erste GitHub-Testbuild verwendet die offizielle `VoicemeeterRemote64.dll` über eine lokale PowerShell-/C#-Bridge (stdin/stdout), ohne Webserver. Einstellungen wählen einen Strip oder Bus 0–7; die Pegel sollen bidirektional aktualisiert werden. Stream Deck Mobile nutzt die bestehende Verbindung zur Desktop-App.
-
-**Achtung:** Der kontinuierliche Finger-Drag innerhalb *einer* Stream-Deck-Mobile-Taste ist nicht implementiert. Der 5-Tasten-Fader ist erst für eine spätere Version vorgesehen.
+> **v0.2.0-alpha – experimenteller Testbuild.** Echtzeit-Steuerung und Darstellung von Strip 0 wurden durch einen Nutzer bereits praktisch bestätigt. Die neue Kanalauswahl ist noch nicht am konkreten Windows-/iPad-System getestet.
 
 ## Download
 
-[Alpha-ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.1.1-alpha/NoobatWork-Voicemeeter-Control-v0.1.1-alpha.zip)
+**[v0.2.0-alpha ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.2.0-alpha/NoobatWork-Voicemeeter-Control-v0.2.0-alpha.zip)**
 
-## Installation
+## Funktionen
 
-Dieser Stand erfordert eine manuelle Installation unter **Windows 10/11**, **Voicemeeter** und **Stream Deck Desktop 7.1+**:
+- Live-Fader: zeigt aktuellen Gain (dB), Mute-Status und Faderposition; Tippen schaltet Mute.
+- Lauter und Leiser: drücken verändert Gain um die eingestellte Schrittweite.
+- **Pro Taste frei wählbarer Kanal:** Hardware Input 1–5 (Strip 0–4), Virtual Input 1–3 (Strip 5–7), Output A1–A5 (Bus 0–4) oder Output B1–B3 (Bus 5–7).
+- **Pro Taste eigener Titel** und **Schrittweite 0,1–12,0 dB** für +/−.
+- Werte werden über die Voicemeeter Remote API live aktualisiert. Bei Änderungen in Voicemeeter folgt die Anzeige.
 
-1. Projekt als ZIP herunterladen (**Code → Download ZIP**) und entpacken.
-2. Stream Deck vollständig beenden.
-3. `INSTALL.bat` starten. Frühere Plugin-Versionen werden automatisch außerhalb des Elgato-Plugin-Ordners gesichert. Im Testbuild wird standardmäßig Strip 0 gesteuert; eine Konfigurationsoberfläche ist noch nicht enthalten.
-4. Stream Deck erneut öffnen, unter „NoobatWork Voicemeeter“ eine Aktion hinzufügen.
+## Installation / Update
 
-Die Installation darf bestehende Plugin-Dateien nicht automatisch überschreiben.
+1. Stream Deck Desktop **7.1+** und Voicemeeter Potato müssen installiert sein.
+2. ZIP herunterladen und **vollständig entpacken**.
+3. Stream Deck vollständig beenden, auch im Infobereich.
+4. `INSTALL.bat` ausführen. Ein vorhandenes Plugin wird unter `%APPDATA%\NoobatWork\VoicemeeterControl\Backups` gesichert; bei Kopierfehlern wird das Backup wiederhergestellt.
+5. Stream Deck starten, Aktion **Live-Fader**, **Lauter** oder **Leiser** hinzufügen.
+6. **Taste anklicken:** Im unteren Eigenschaftenbereich erscheinen die Dropdown-Kanalauswahl, Beschriftung und bei +/− die Schrittweite. Änderungen werden automatisch gespeichert.
 
-**Hinweis:** Die Stream-Deck-Desktop-App muss mindestens Version 7.1 haben. Wenn das Plugin nicht in der Aktionsliste erscheint, kontrolliere `%APPDATA%\Elgato\StreamDeck\logs\StreamDeck0.log` auf `com.noobatwork.voicemeeter` oder `Plugin invalid`.
+**Wichtig:** `Strip[0]` ist Hardware Input 1, **nicht** Ausgang A1. A1 entspricht `Bus[0]`.
 
-## Tests
+## Technik & Einschränkungen
 
-`node --test tests/*.test.js`
+- Windows-Plugin mit Node.js und lokaler PowerShell/C#-Bridge zur Voicemeeter Remote API (`VoicemeeterRemote64.dll`).
+- Keine zusätzlichen NPM-Pakete oder externen Netzwerkserver.
+- Nur Voicemeeter Potato mit acht Strips und acht Bussen ist für diese Oberfläche vorgesehen.
+- Ein frei mit dem Finger ziehbarer Slider innerhalb einer einzelnen Stream Deck Mobile Taste und Stream Deck+ Encoder sind noch **nicht** implementiert. Die Anzeige aktualisiert sich jedoch beim Bewegen des Reglers in Voicemeeter.
+- Beta-Test: Bei Problemen bitte `%APPDATA%\Elgato\StreamDeck\logs\StreamDeck0.log` prüfen.
+
+## Build / CI
+
+GitHub Actions überprüft `plugin.js`, `settings.js`, das Manifest und die erforderlichen Icon-Dateien und erstellt das ZIP als **Pre-Release**. Der erfolgreiche Build ersetzt keinen Praxistest in Stream Deck und Voicemeeter.
 
 ## Referenzen
 
-- [VB-Audio Voicemeeter Remote API](https://github.com/vburel2018/Voicemeeter-SDK)
+- [VB-Audio Voicemeeter SDK](https://github.com/vburel2018/Voicemeeter-SDK)
 - [Elgato Stream Deck SDK](https://docs.elgato.com/streamdeck/sdk/)
 
 Lizenz: [MIT](LICENSE) · © 2026 NoobatWorkttv
