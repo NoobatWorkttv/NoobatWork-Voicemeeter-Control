@@ -14,6 +14,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: v0.5.0-alpha-release
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: windows-latest
@@ -39,6 +42,35 @@ jobs:
           dotnet publish windows-audio/NoobatWorkAudioSessions.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o com.noobatwork.voicemeeter.sdPlugin/bin
           if ($LASTEXITCODE -ne 0) { throw 'Windows audio helper compilation failed' }
           if (-not (Test-Path com.noobatwork.voicemeeter.sdPlugin/bin/NoobatWorkAudioSessions.exe)) { throw 'Missing audio helper binary' }
+      - name: Smoke-test app discovery protocol (headless Windows runner)
+        shell: powershell
+        run: |
+          $exe = 'com.noobatwork.voicemeeter.sdPlugin\bin\NoobatWorkAudioSessions.exe'
+          $reply = '{"op":"list"}' | & $exe
+          if ($LASTEXITCODE -ne 0) { throw 'Audio helper process exited with error' }
+          $obj = $reply | ConvertFrom-Json
+          if ($obj.type -ne 'apps') { throw 'Audio helper did not return an apps response' }
+          Write-Host "Application discovery protocol OK: $(@($obj.apps).Count) sessions on runner"
+      - name: Smoke-test automatic update and backup (isolated APPDATA)
+        shell: powershell
+        run: |
+          $original = $env:APPDATA
+          $root = (Resolve-Path 'com.noobatwork.voicemeeter.sdPlugin').Path
+          $env:APPDATA = Join-Path $env:RUNNER_TEMP 'NoobatWork-InstallerSmoke'
+          try {
+            $dest = Join-Path $env:APPDATA 'Elgato\StreamDeck\Plugins\com.noobatwork.voicemeeter.sdPlugin'
+            New-Item -ItemType Directory -Force -Path $dest | Out-Null
+            Set-Content -Path (Join-Path $dest 'old-version.txt') -Value 'backup-sentinel'
+            & .\installer\Setup.ps1 -PluginPath $root
+            if ($LASTEXITCODE -ne 0) { throw 'Automatic installation failed' }
+            if (-not (Test-Path (Join-Path $dest 'manifest.json'))) { throw 'Plugin not installed' }
+            $backups = @(Get-ChildItem (Join-Path $env:APPDATA 'NoobatWork\VoicemeeterControl\Backups') -Directory)
+            if ($backups.Count -lt 1) { throw 'Previous plugin directory was not backed up' }
+            if (-not (Test-Path (Join-Path $backups[0].FullName 'old-version.txt'))) { throw 'Backup sentinel missing' }
+            Write-Host 'Isolated installer backup and update test passed'
+          } finally {
+            $env:APPDATA = $original
+          }
       - name: Generate images and validate manifest
         shell: bash
         run: python tools/generate-icons.py
