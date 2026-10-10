@@ -16,6 +16,8 @@
   const minGain = document.getElementById('minGain');
   const maxGain = document.getElementById('maxGain');
   const status = document.getElementById('status');
+  const theme = document.getElementById('theme');
+  const accent = document.getElementById('accent');
   const channels = [
     {group:'Eingänge · Hardware', options:Array.from({length:5},(_,i)=>({value:'Strip:'+i,text:'Hardware Input '+(i+1)}))},
     {group:'Eingänge · Virtuell', options:Array.from({length:3},(_,i)=>({value:'Strip:'+(i+5),text:'Virtual Input '+(i+1)}))},
@@ -43,6 +45,8 @@
     return {
       appId:typeof s.appId==='string'?s.appId.toLowerCase().slice(0,120):'',
       muteGesture:s.muteGesture==='tapHold'?'tapHold':'doubleTap',
+      theme:['hybrid','neon','clean'].includes(s.theme)?s.theme:'hybrid',
+      accent:['auto','cyan','blue','purple','red','orange','green'].includes(s.accent)?s.accent:'auto',
       group:s.group==='Bus'?'Bus':'Strip',
       index:Number.isFinite(index)?Math.max(0,Math.min(7,Math.trunc(index))):0,
       label:typeof s.label==='string'?s.label.slice(0,24):'',
@@ -54,7 +58,7 @@
   };
   const equals=(a,b)=>{
     a=normalize(a);b=normalize(b);
-    return a.group===b.group&&a.index===b.index&&a.label===b.label&&a.step===b.step&&a.segment===b.segment&&a.minGain===b.minGain&&a.maxGain===b.maxGain&&a.appId===b.appId&&a.muteGesture===b.muteGesture;
+    return a.group===b.group&&a.index===b.index&&a.label===b.label&&a.step===b.step&&a.segment===b.segment&&a.minGain===b.minGain&&a.maxGain===b.maxGain&&a.appId===b.appId&&a.muteGesture===b.muteGesture&&a.theme===b.theme&&a.accent===b.accent;
   };
   function buildAppOptions(selected){
     appSelect.innerHTML='';
@@ -71,6 +75,8 @@
     label.value=settings.label;
     step.value=String(settings.step);
     muteGesture.value=settings.muteGesture;
+    theme.value=settings.theme;
+    accent.value=settings.accent;
     segment.value=String(settings.segment);
     minGain.value=String(settings.minGain);
     maxGain.value=String(settings.maxGain);
@@ -82,7 +88,7 @@
       appId:appSelect.value||'',
       group:selected[0],index:Number.isFinite(index)?index:0,
       label:label.value.trim(),step:Number(step.value),
-      muteGesture:muteGesture.value,
+      muteGesture:muteGesture.value,theme:theme.value,accent:accent.value,
       segment:Number(segment.value),minGain:Number(minGain.value),maxGain:Number(maxGain.value)
     });
   }
@@ -104,6 +110,8 @@
   channel.addEventListener('change',save);
   appSelect.addEventListener('change',save);
   muteGesture.addEventListener('change',save);
+  theme.addEventListener('change',save);
+  accent.addEventListener('change',save);
   refreshApps.addEventListener('click',()=>{
     if(ws?.readyState===WebSocket.OPEN&&action?.endsWith('.app')){
       ws.send(JSON.stringify({event:'sendToPlugin',action,context,payload:{op:'list-apps'}}));
