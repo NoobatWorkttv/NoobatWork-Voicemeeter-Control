@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1320">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NoobatWork Mixer">
+  <title>NoobatWork · Audio Mixer</title>
+  <link rel="stylesheet" href="/style.css">
+  <script defer src="/favorites.js"></script>
+  <script defer src="/profile.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <div id="shell">
+    <header class="topbar">
+      <div class="identity">
+        <div class="logo" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+        <div><h1>Audio Mixer</h1><p>NOOBATWORK <span class="separator">/</span> STREAM · GAME · CHAT</p></div>
+      </div>
+      <nav class="tab-bar" aria-label="Audioansicht">
+        <button type="button" class="tab selected" data-tab="all">Alle</button>
+        <button type="button" class="tab" data-tab="favorites">★</button>
+        <button type="button" class="tab" data-tab="apps">Apps</button>
+        <button type="button" class="tab" data-tab="channels">Hardware</button>
+      </nav>
+      <div class="layout-chooser">
+        <label for="layout-mode">Ansicht</label>
+        <select id="layout-mode" aria-label="Layoutmodus auswählen">
+          <option value="auto">Automatisch</option>
+          <option value="split">Split-Screen</option>
+          <option value="full">Vollbild</option>
+        </select>
+      </div>
+      <div class="status-wrap">
+        <span id="connection-dot" class="dot offline"></span>
+        <span id="connection">Verbinde ...</span>
+        <button id="disconnect" class="icon-button" type="button" title="Gerät entkoppeln" aria-label="Gerät entkoppeln">⎋</button>
+      </div>
+    </header>
+    <main class="workspace">
+      <section class="channel-toolbar">
+        <div><h2 id="heading">Dein Live-Mixer</h2><p>Ziehe einen Fader mit dem Finger · Lautstärke wird direkt übertragen</p></div>
+        <div class="toolbar-actions">
+          <button id="edit-favorites" class="edit-favorites" type="button" aria-pressed="false">★ Favoriten bearbeiten</button>
+          <div class="live-pill"><span class="pulse"></span> LIVE AUDIO</div>
+        </div>
+      </section>
+      <div id="channels" class="channels" aria-label="Audio-Fader" role="group"></div>
+      <div id="empty" class="empty" hidden>
+        <div>◉</div><strong>Keine aktiven Audiokanäle</strong>
+        <p id="empty-hint">Starte auf deinem Windows-PC eine Anwendung mit Tonausgabe oder wähle „Hardware“.</p>
+      </div>
+    </main>
+    <section class="master-panel" aria-label="Master-Ausgang">
+      <div class="master-icon" aria-hidden="true">◖))</div>
+      <div class="master-title"><strong>Master Output</strong><small>Voicemeeter · A1</small></div>
+      <div class="master-meter" aria-hidden="true"><div id="master-meter-fill"></div></div>
+      <div class="master-db" id="master-db">-- dB</div>
+      <button class="master-mute" type="button" id="master-mute" disabled>Master Mute</button>
+    </section>
+    <footer class="footline"><span>NOOBATWORK AUDIO CONTROL <span class="accent-text">/ CONTROL CENTER v0.2.0</span></span><span id="system-status">LAN · PRIVAT</span></footer>
+  </div>
+  <div class="pair-overlay" id="pair-overlay">
+    <form id="pair-form" class="pair-card">
+      <div class="pair-logo">≋</div>
+      <h2>Verbinde deinen Mixer</h2>
+      <p>Gib den sechsstelligen Code ein, der im Windows-Fenster von <strong>NoobatWork Mixer Control Center</strong> angezeigt wird.</p>
+      <label for="code">PAIRING-CODE</label>
+      <input id="code" name="code" type="text" pattern="[0-9]{6}" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" required>
+      <button class="pair-btn" type="submit">Mit Windows-PC verbinden ↗</button>
+      <p id="pair-error" class="pair-error" role="alert"></p>
+      <small>Nur im eigenen WLAN/LAN nutzen · Keine Cloud</small>
+    </form>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -1,0 +1,90 @@
+name: Mixer Control Center v0.2.0
+on:
+  push:
+    branches: [main, control-center-v0.2.0]
+    paths: ['control-center/**', '.github/workflows/build-control-center.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: control-center-v020
+  cancel-in-progress: false
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build GUI and existing low-latency Windows helper
+        shell: pwsh
+        run: |
+          dotnet publish control-center/NoobatWork.ControlCenter.csproj -c Release -o control-center/publish
+          if ($LASTEXITCODE -ne 0) { throw 'GUI build failed' }
+          dotnet publish windows-audio/NoobatWorkAudioSessions.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DefineConstants=IPAD_MIXER -o control-center/publish/bin
+          if ($LASTEXITCODE -ne 0) { throw 'Audio helper build failed' }
+          Copy-Item com.noobatwork.voicemeeter.sdPlugin/bridge.ps1 control-center/publish/bin/bridge.ps1
+          $reply = '{"op":"set","app":"nonexistenttestapp.exe","value":0.5}' | & control-center/publish/bin/NoobatWorkAudioSessions.exe
+          if (($reply | ConvertFrom-Json).type -ne 'ack') { throw 'Low latency helper regression' }
+      - name: Existing regression tests and new profile tests
+        shell: pwsh
+        run: |
+          node --check control-center/wwwroot/app.js
+          if ($LASTEXITCODE -ne 0) { throw 'Browser syntax failed' }
+          node --test tests/*.test.cjs ipad-app/tests/favorites.test.cjs control-center/tests/*.test.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Regression tests failed' }
+      - name: Windows backend, native GUI and three-client WebSocket integration
+        shell: pwsh
+        run: |
+          $env:NAW_DATA_DIR = Join-Path $env:RUNNER_TEMP 'center-test-data'
+          $env:NAW_TEST_RESULT = Join-Path $env:RUNNER_TEMP 'center-test.json'
+          $p = Start-Process (Resolve-Path 'control-center/publish/NoobatWork-Mixer-Control-Center.exe') -ArgumentList '--self-test' -WindowStyle Hidden -PassThru
+          if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'Integration timeout' }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $env:NAW_TEST_RESULT)) { throw 'Integration process failed' }
+          $result = Get-Content $env:NAW_TEST_RESULT -Raw | ConvertFrom-Json
+          if (-not $result.passed) { throw $result.error }
+          Get-Content $env:NAW_TEST_RESULT
+      - name: Build separate Windows Setup
+        shell: pwsh
+        run: |
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          & $iscc control-center/installer/ControlCenter.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+          $setup = Get-Item control-center/dist/NoobatWork-Mixer-Control-Center-v0.2.0-Setup.exe
+          $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($setup.Name)" | Set-Content control-center/dist/SHA256SUMS.txt
+      - name: Install and verify isolated package
+        shell: pwsh
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP 'center-installed'
+          $installer = Start-Process (Resolve-Path 'control-center/dist/NoobatWork-Mixer-Control-Center-v0.2.0-Setup.exe') -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$target" -WindowStyle Hidden -Wait -PassThru
+          if ($installer.ExitCode -ne 0) { throw 'Setup failed' }
+          foreach ($file in @('NoobatWork-Mixer-Control-Center.exe','bin/bridge.ps1','bin/NoobatWorkAudioSessions.exe','wwwroot/profile.js')) {
+            if (-not (Test-Path (Join-Path $target $file))) { throw "Missing installed file: $file" }
+          }
+          $env:NAW_DATA_DIR = Join-Path $env:RUNNER_TEMP 'installed-test-data'
+          $env:NAW_TEST_RESULT = Join-Path $env:RUNNER_TEMP 'installed-test.json'
+          $p = Start-Process (Join-Path $target 'NoobatWork-Mixer-Control-Center.exe') -ArgumentList '--self-test' -WindowStyle Hidden -PassThru
+          if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'Installed app timeout' }
+          if ($p.ExitCode -ne 0 -or -not (Get-Content $env:NAW_TEST_RESULT -Raw | ConvertFrom-Json).passed) { throw 'Installed app test failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Control-Center-v0.2.0-Windows
+          path: control-center/dist/*
+      - name: Publish new version without replacing any existing release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'v0.2.0-control-center'
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) { throw 'Version already published. Refusing to overwrite release.' }
+          gh release create $tag --target '${{ github.sha }}' --prerelease --latest=false --title 'NoobatWork Mixer Control Center v0.2.0' --notes-file control-center/RELEASE.md control-center/dist/NoobatWork-Mixer-Control-Center-v0.2.0-Setup.exe control-center/dist/SHA256SUMS.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Release failed' }
+          gh release view $tag --json url,tagName,assets
+          if ($LASTEXITCODE -ne 0) { throw 'Release verification failed' }
