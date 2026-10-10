@@ -22,8 +22,19 @@ jobs:
       - name: Compile existing isolated NAudio session helper
         shell: pwsh
         run: |
-          dotnet publish windows-audio/NoobatWorkAudioSessions.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ipad-app/publish/bin
+          dotnet publish windows-audio/NoobatWorkAudioSessions.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DefineConstants=IPAD_MIXER -o ipad-app/publish/bin
           if ($LASTEXITCODE -ne 0) { throw 'NAudio helper compilation failed' }
+      - name: Verify low-latency AudioSession helper responds without full scans
+        shell: pwsh
+        run: |
+          $exe = 'ipad-app/publish/bin/NoobatWorkAudioSessions.exe'
+          $reply = '{"op":"set","app":"nonexistenttestapp.exe","value":0.5}' | & $exe
+          if ($LASTEXITCODE -ne 0) { throw 'Helper exited with error' }
+          $data = $reply | ConvertFrom-Json
+          if ($data.type -ne 'ack' -or $data.requested -ne 'set') {
+            throw "Fast helper mode missing: $reply"
+          }
+          Write-Host 'Fast per-app set command acknowledged without full application snapshot'
       - name: Compile standalone iPad LAN companion (ASP.NET Core)
         shell: pwsh
         run: |
@@ -85,20 +96,20 @@ jobs:
           if (-not (Test-Path $iscc)) { throw 'ISCC.exe not available' }
           & $iscc 'ipad-app/installer/NoobatWork-iPad.iss'
           if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed' }
-          $installer = Get-ChildItem -Path ipad-app -Recurse -File -Filter 'NoobatWork-iPad-Mixer-v0.1.0-preview-Setup.exe' | Select-Object -First 1
+          $installer = Get-ChildItem -Path ipad-app -Recurse -File -Filter 'NoobatWork-iPad-Mixer-v0.1.1-preview-Setup.exe' | Select-Object -First 1
           if (-not $installer) { throw 'Missing Setup.exe output' }
-          Copy-Item -LiteralPath $installer.FullName -Destination 'NoobatWork-iPad-Mixer-v0.1.0-preview-Setup.exe'
+          Copy-Item -LiteralPath $installer.FullName -Destination 'NoobatWork-iPad-Mixer-v0.1.1-preview-Setup.exe'
       - name: Publish separate iPad Preview release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = 'v0.1.0-ipad-preview'
+          $tag = 'v0.1.1-ipad-preview'
           $existing = @(gh release list --limit 100 --json tagName | ConvertFrom-Json | Where-Object { $_.tagName -eq $tag })
           if ($LASTEXITCODE -ne 0) { throw 'Could not query releases' }
           if($existing.Count -eq 0) {
-            gh release create $tag --prerelease --title 'iPad Edition v0.1.0 – LAN Mixer Preview' --notes 'Separate Windows companion with genuine iPad touch-fader web mixer, Windows audio session control, Voicemeeter channels, live meters and private-LAN code pairing. Preview: requires physical iPad test and trusted LAN. Stream Deck v0.6.0 remains untouched.'
+            gh release create $tag --prerelease --title 'iPad Edition v0.1.1 – Low Latency Faders' --notes 'Performance preview: faster per-app control without rescanning all icons on each gain write, immediate touch feedback, coalesced final slider values, optimistic live status handling. Separate from unchanged working Stream Deck plugin. Test on your iPad.'
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
           }
-          gh release upload $tag 'NoobatWork-iPad-Mixer-v0.1.0-preview-Setup.exe' 'NoobatWork-iPad-Mixer-v0.1.0-preview.zip' --clobber
+          gh release upload $tag 'NoobatWork-iPad-Mixer-v0.1.1-preview-Setup.exe' 'NoobatWork-iPad-Mixer-v0.1.1-preview.zip' --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Release asset upload failed' }
