@@ -4,7 +4,7 @@
   "Category": "NoobatWork Voicemeeter",
   "Author": "NoobatWork",
   "Description": "Voicemeeter gain and mute control for Stream Deck",
-  "Version": "0.1.1.0",
+  "Version": "0.2.0.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "7.1"
@@ -68,5 +68,6 @@
   ],
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
   "Icon": "imgs/plugin",
-  "CategoryIcon": "imgs/category"
+  "CategoryIcon": "imgs/category",
+  "PropertyInspectorPath": "settings.html"
 }
