@@ -11,6 +11,7 @@ public class VM {
  [DllImport("VoicemeeterRemote64.dll")]public static extern int VBVMR_IsParametersDirty();
  [DllImport("VoicemeeterRemote64.dll",CharSet=CharSet.Ansi)]public static extern int VBVMR_GetParameterFloat(string name,out float value);
  [DllImport("VoicemeeterRemote64.dll",CharSet=CharSet.Ansi)]public static extern int VBVMR_SetParameterFloat(string name,float value);
+ [DllImport("VoicemeeterRemote64.dll")]public static extern int VBVMR_GetLevel(int type,int channel,out float value);
 }
 '@
 try {
@@ -29,7 +30,37 @@ try {
     [void][VM]::VBVMR_IsParametersDirty()
     $values=@{}
     foreach($path in $q.paths){if($path -notmatch $valid){continue};[single]$v=0;if([VM]::VBVMR_GetParameterFloat([string]$path,[ref]$v)-eq 0){$values[$path]=[double]$v}}
-    Send @{values=$values}
+    # All GetLevel calls occur on this single PowerShell bridge thread.
+    # The samples are LINEAR amplitudes. The JavaScript renderer converts them to dBFS.
+    $meters=@{}
+    foreach($meter in $q.meters){
+      if($null -eq $meter){continue}
+      $key=[string]$meter.key
+      if($key -notmatch '^(Strip|Bus)\[[0-7]\]
+   }elseif($q.op -eq 'set'){
+    $path=[string]$q.path;$value=[double]$q.value
+    if($path -notmatch $valid){continue}
+    if($path.EndsWith('.Mute')){$value=if($value -gt 0.5){1}else{0}}else{$value=[Math]::Max(-60,[Math]::Min(12,$value))}
+    [void][VM]::VBVMR_SetParameterFloat($path,[single]$value)
+   }
+  }catch{Send @{error=$_.Exception.Message}}
+ }
+} catch {Send @{error=$_.Exception.Message}} finally {try{[void][VM]::VBVMR_Logout()}catch{}}
+){continue}
+      $type=[int]$meter.type
+      if($type -ne 2 -and $type -ne 3){continue}
+      $peak=[single]0
+      foreach($c in $meter.channels){
+        $idx=[int]$c
+        if($idx -lt 0 -or $idx -gt 63){continue}
+        [single]$amplitude=0
+        if([VM]::VBVMR_GetLevel($type,$idx,[ref]$amplitude) -eq 0){
+          if(-not [single]::IsNaN($amplitude) -and $amplitude -gt $peak){$peak=$amplitude}
+        }
+      }
+      $meters[$key]=[double]$peak
+    }
+    Send @{values=$values;meters=$meters}
    }elseif($q.op -eq 'set'){
     $path=[string]$q.path;$value=[double]$q.value
     if($path -notmatch $valid){continue}
