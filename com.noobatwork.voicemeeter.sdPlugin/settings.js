@@ -5,6 +5,7 @@
   const step = document.getElementById('step');
   const stepWrapper = document.getElementById('step-wrapper');
   const segmentWrapper = document.getElementById('segment-wrapper');
+  const compactWrapper = document.getElementById('compact-wrapper');
   const segment = document.getElementById('segment');
   const minGain = document.getElementById('minGain');
   const maxGain = document.getElementById('maxGain');
@@ -104,8 +105,10 @@
       context=uuid;
       action=details.action;
       if(!action) throw new Error('Aktions-ID fehlt');
-      const keyIsStep=action.endsWith('.up')||action.endsWith('.down');
+      const isCompact=action.endsWith('.compact');
+      const keyIsStep=action.endsWith('.up')||action.endsWith('.down')||isCompact;
       stepWrapper.hidden=!keyIsStep;
+      compactWrapper.hidden=!isCompact;
       segmentWrapper.hidden=!action.endsWith('.segment');
       applySettings(details.payload?.settings||{});
       ws=new WebSocket('ws://127.0.0.1:'+port);
