@@ -70,6 +70,57 @@ internal static class Program
     private static void Reply(object message) =>
         Console.WriteLine(JsonSerializer.Serialize(message, JsonOptions));
 
+#if IPAD_MIXER
+    // Fast application commands do not retrieve icons, peak meters or all app state.
+    private static void ApplyFast(string operation, string app, JsonElement input)
+    {
+        bool mute = false;
+        double level = 0;
+        if (operation == "mute")
+            mute = input.GetProperty("value").GetBoolean();
+        else
+        {
+            level = operation == "adjust" ?
+                input.GetProperty("delta").GetDouble() : input.GetProperty("value").GetDouble();
+            if (!double.IsFinite(level) ||
+                (operation == "adjust" && Math.Abs(level) > .5) ||
+                (operation == "set" && (level < 0 || level > 1)))
+                throw new ArgumentOutOfRangeException(nameof(level));
+        }
+        string name = app[..^4];
+        using var enumerator = new MMDeviceEnumerator();
+        var endpoints = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+        foreach (var device in endpoints)
+        {
+            try
+            {
+                using (device)
+                {
+                    var sessions = device.AudioSessionManager.Sessions;
+                    for (int i = 0; i < sessions.Count; i++)
+                    {
+                        try
+                        {
+                            using var session = sessions[i];
+                            if (session.IsSystemSoundsSession) continue;
+                            var pid = (int)session.GetProcessID;
+                            if (pid <= 0) continue;
+                            using var process = Process.GetProcessById(pid);
+                            if (!process.ProcessName.Equals(name, StringComparison.OrdinalIgnoreCase)) continue;
+                            var audio = session.SimpleAudioVolume;
+                            if (operation == "mute") audio.Mute = mute;
+                            else audio.Volume = operation == "adjust" ?
+                                (float)Math.Clamp(audio.Volume + level, 0, 1) : (float)level;
+                        }
+                        catch (Exception) { }
+                    }
+                }
+            }
+            catch (Exception) { }
+        }
+    }
+#endif
+
     // Cache the actual EXE icon, never hit the disk/GDI+ every 1.5-second poll.
     private static string? FindIcon(string file)
     {
