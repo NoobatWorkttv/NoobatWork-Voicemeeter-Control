@@ -190,3 +190,32 @@ test('app mixer exposes gesture selector; mute action does not',()=>{
   const mute=launchInspector('com.noobatwork.voicemeeter.mute');
   assert.equal(mute.elements['mute-gesture-wrapper'].hidden,true);
 });
+
+test('visual style selectors are persisted per key without changing gesture settings',()=>{
+ const {socket,elements,action}=launchInspector('com.noobatwork.voicemeeter.compact');
+ assert.equal(elements.theme.value,'hybrid');
+ assert.equal(elements.accent.value,'auto');
+ elements.theme.value='neon';
+ elements.accent.value='red';
+ elements.muteGesture.value='tapHold';
+ elements.theme.emit('change');
+ const last=socket.sent.at(-1);
+ assert.equal(last.event,'setSettings');
+ assert.equal(last.payload.theme,'neon');
+ assert.equal(last.payload.accent,'red');
+ assert.equal(last.payload.muteGesture,'tapHold');
+ socket.recv({event:'sendToPropertyInspector',action,context:'app',
+  payload:{type:'settings-confirmed',settings:last.payload}});
+ assert.equal(elements.theme.value,'neon');
+ assert.equal(elements.accent.value,'red');
+ assert.equal(elements.status.textContent,'✓ Gespeichert');
+});
+test('app mixer supports personal accent while retaining EXE assignment',()=>{
+ const {socket,elements}=launchInspector('com.noobatwork.voicemeeter.app');
+ elements.app.value='discord.exe';
+ elements.accent.value='purple';
+ elements.accent.emit('change');
+ const last=socket.sent.at(-1).payload;
+ assert.equal(last.appId,'discord.exe');
+ assert.equal(last.accent,'purple');
+});
