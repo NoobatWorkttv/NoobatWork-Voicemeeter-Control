@@ -2,11 +2,11 @@
 
 **Windows Stream Deck / Stream Deck Mobile** Plugin für direkte Steuerung von **Voicemeeter Potato**, ohne Flask oder weiteren Webserver.
 
-> **v0.2.0-alpha – experimenteller Testbuild.** Echtzeit-Steuerung und Darstellung von Strip 0 wurden durch einen Nutzer bereits praktisch bestätigt. Die neue Kanalauswahl ist noch nicht am konkreten Windows-/iPad-System getestet.
+> **v0.2.1-alpha – experimenteller Testbuild.** Echtzeit-Steuerung und Darstellung von Strip 0 wurden durch einen Nutzer bereits praktisch bestätigt. Die Kanalauswahl wird in v0.2.1-alpha auf korrekte Speicherung und Rückmeldung überprüft; die neue Version ist noch nicht auf einem echten Windows-/iPad-System getestet.
 
 ## Download
 
-**[v0.2.0-alpha ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.2.0-alpha/NoobatWork-Voicemeeter-Control-v0.2.0-alpha.zip)**
+**[v0.2.1-alpha ZIP herunterladen](https://github.com/NoobatWorkttv/NoobatWork-Voicemeeter-Control/releases/download/v0.2.1-alpha/NoobatWork-Voicemeeter-Control-v0.2.1-alpha.zip)**
 
 ## Funktionen
 
@@ -15,6 +15,8 @@
 - **Pro Taste frei wählbarer Kanal:** Hardware Input 1–5 (Strip 0–4), Virtual Input 1–3 (Strip 5–7), Output A1–A5 (Bus 0–4) oder Output B1–B3 (Bus 5–7).
 - **Pro Taste eigener Titel** und **Schrittweite 0,1–12,0 dB** für +/−.
 - Werte werden über die Voicemeeter Remote API live aktualisiert. Bei Änderungen in Voicemeeter folgt die Anzeige.
+
+**Fehlerbehebung v0.2.1:** Der Property Inspector verwendet nun die von Stream Deck übergebene UI-Kontextkennung für `getSettings`/`setSettings`; die Anzeige „✓ Gespeichert“ erscheint erst, nachdem der Plugin-Prozess die von Stream Deck zurückgemeldeten Einstellungen erhalten hat. Wenn keine Bestätigung eintrifft, wird das angezeigt.
 
 ## Installation / Update
 
