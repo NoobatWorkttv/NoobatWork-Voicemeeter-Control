@@ -4,7 +4,7 @@
   "Category": "NoobatWork Voicemeeter",
   "Author": "NoobatWork",
   "Description": "Live audio meters, gain/mute and five-key touch fader for Voicemeeter Potato",
-  "Version": "0.3.0.0",
+  "Version": "0.3.1.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "7.1"
