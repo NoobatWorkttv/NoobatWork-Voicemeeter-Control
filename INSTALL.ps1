@@ -18,7 +18,7 @@ if (Test-Path -LiteralPath $dest) {
 }
 try {
   Copy-Item -LiteralPath $src -Destination $dest -Recurse -ErrorAction Stop
-  Write-Host "Installed NoobatWork Voicemeeter Control v0.1.1-alpha"
+  Write-Host "Installed NoobatWork Voicemeeter Control v0.2.0-alpha"
   Write-Host "Restart Stream Deck."
 } catch {
   if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Force -Recurse -ErrorAction SilentlyContinue }
