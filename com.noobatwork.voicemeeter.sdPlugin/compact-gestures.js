@@ -2,7 +2,7 @@
 
 /**
  * Single-button mixer controls based only on Stream Deck keypad keyDown/keyUp.
- * Default: every short tap increases immediately, including rapid consecutive taps.\n * Press & hold decreases repeatedly. Double-tap mute is explicitly opt-in.
+ * Tap: gain up. Press & hold: gain down, repeated. Double tap: mute.
  *
  * Timers are injected for deterministic tests. No API calls or audio handling here.
  */
@@ -10,7 +10,7 @@ function createCompactGestures(emit,opts={}) {
   const later=opts.setTimeout||setTimeout;
   const cancel=opts.clearTimeout||clearTimeout;
   const holdMs=opts.holdMs||520;
-  const doubleMs=opts.doubleMs||280;\n  const doubleTapMute=opts.doubleTapMute||(()=>false);
+  const doubleMs=opts.doubleMs||280;
   const repeatMs=opts.repeatMs||280;
   const maxRepeats=opts.maxRepeats||12;
   const keys=new Map();
@@ -28,7 +28,7 @@ function createCompactGestures(emit,opts={}) {
   function down(ctx){
     const s=state(ctx);
     if(s.pressed)return; // ignore duplicate keyDown events
-    const enableDouble=doubleTapMute(ctx)===true;\n    s.second=enableDouble&&s.tapTimer!==null;
+    s.second=s.tapTimer!==null;
     if(s.second)clearTimer(s,'tapTimer');
     s.pressed=true;s.holding=false;s.repeatCount=0;
     s.holdTimer=later(function beginHold(){
@@ -55,14 +55,6 @@ function createCompactGestures(emit,opts={}) {
     clearTimer(s,'holdTimer');
     clearTimer(s,'repeatTimer');
     if(s.holding){s.holding=false;s.second=false;return;}
-    // Safe default: no double-tap recognition, so even extremely fast taps
-    // always increase the level and can never toggle mute accidentally.
-    if(doubleTapMute(ctx)!==true){
-      s.second=false;
-      clearTimer(s,'tapTimer');
-      emit(ctx,'increase');
-      return;
-    }
     if(s.second){
       s.second=false;
       emit(ctx,'mute');
