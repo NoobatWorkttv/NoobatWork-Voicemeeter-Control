@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="NoobatWork Mixer">
   <title>NoobatWork · Audio Mixer</title>
   <link rel="stylesheet" href="/style.css">
+  <script defer src="/favorites.js"></script>
   <script defer src="/app.js"></script>
 </head>
 <body>
@@ -20,9 +21,18 @@
       </div>
       <nav class="tab-bar" aria-label="Audioansicht">
         <button type="button" class="tab selected" data-tab="all">Alle</button>
+        <button type="button" class="tab" data-tab="favorites">★</button>
         <button type="button" class="tab" data-tab="apps">Apps</button>
         <button type="button" class="tab" data-tab="channels">Hardware</button>
       </nav>
+      <div class="layout-chooser">
+        <label for="layout-mode">Ansicht</label>
+        <select id="layout-mode" aria-label="Layoutmodus auswählen">
+          <option value="auto">Automatisch</option>
+          <option value="split">Split-Screen</option>
+          <option value="full">Vollbild</option>
+        </select>
+      </div>
       <div class="status-wrap">
         <span id="connection-dot" class="dot offline"></span>
         <span id="connection">Verbinde ...</span>
@@ -32,12 +42,15 @@
     <main class="workspace">
       <section class="channel-toolbar">
         <div><h2 id="heading">Dein Live-Mixer</h2><p>Ziehe einen Fader mit dem Finger · Lautstärke wird direkt übertragen</p></div>
-        <div class="live-pill"><span class="pulse"></span> LIVE AUDIO</div>
+        <div class="toolbar-actions">
+          <button id="edit-favorites" class="edit-favorites" type="button" aria-pressed="false">★ Favoriten bearbeiten</button>
+          <div class="live-pill"><span class="pulse"></span> LIVE AUDIO</div>
+        </div>
       </section>
       <div id="channels" class="channels" aria-label="Audio-Fader" role="group"></div>
       <div id="empty" class="empty" hidden>
         <div>◉</div><strong>Keine aktiven Audiokanäle</strong>
-        <p>Starte auf deinem Windows-PC eine Anwendung mit Tonausgabe oder wähle „Hardware“.</p>
+        <p id="empty-hint">Starte auf deinem Windows-PC eine Anwendung mit Tonausgabe oder wähle „Hardware“.</p>
       </div>
     </main>
     <section class="master-panel" aria-label="Master-Ausgang">
