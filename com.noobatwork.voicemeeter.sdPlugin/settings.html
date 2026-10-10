@@ -42,8 +42,17 @@
     <p class="hint">Wie stark die Lautstärke bei jedem Tastendruck verändert wird.</p>
   </div>
   <div id="compact-wrapper" hidden>
-    <p class="hint"><strong>Kompakt-Mixer – eine Taste pro Kanal:</strong> Kurz tippen = lauter, gedrückt halten = leiser (mehrfach), zweimal kurz tippen = Mute an/aus. Halten beginnt nach ca. 0,5 Sekunden. Zwischen zwei kurzen Tipps liegt ein Erkennungsfenster von 0,28 Sekunden.</p>
+    <p class="hint"><strong>Kompakt-Mixer – eine Taste pro Kanal:</strong> Kurz tippen = lauter, gedrückt halten = leiser. Die Mute-Geste wird weiter unten pro Taste ausgewählt.</p>
     <p class="hint">Jede Mixer-Kachel kann einen anderen Input oder Ausgang steuern. Faderposition und echter Audiopegel werden auf der Taste live angezeigt.</p>
+  </div>
+  <div id="mute-gesture-wrapper" hidden>
+    <label for="muteGesture">Mute-Bedienung</label>
+    <select id="muteGesture">
+      <option value="doubleTap">Klassisch: zweimal schnell tippen</option>
+      <option value="tapHold">Neu: kurz tippen, dann halten (350 ms)</option>
+    </select>
+    <p class="hint">Beim neuen Modus macht <strong>jeder kurze Tipp sofort lauter</strong> – auch mehrmals schnell hintereinander. Für Mute einmal kurz tippen und innerhalb von 280 ms den zweiten Tipp mindestens 350 ms halten. Ein einzelner langer Druck macht weiterhin leiser.</p>
+    <p class="hint">Standard ist die bisherige Doppeltipp-Steuerung. Du kannst den Modus für jede Taste einzeln ändern.</p>
   </div>
   <div id="segment-wrapper" hidden>
     <label for="segment">Fader-Segment / Position</label>
