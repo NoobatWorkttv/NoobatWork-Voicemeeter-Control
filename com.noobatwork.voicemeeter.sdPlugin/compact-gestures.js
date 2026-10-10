@@ -2,7 +2,9 @@
 
 /**
  * Single-button mixer controls based only on Stream Deck keypad keyDown/keyUp.
- * Legacy (default): tap increases, hold decreases, double tap mutes.\n * Optional tapHold: each quick tap increases immediately; tap and hold a\n * second press (within 280ms) for 350ms to mute. Ordinary hold decreases.
+ * Legacy (default): tap increases, hold decreases, double tap mutes.
+ * Optional tapHold: each quick tap increases immediately; tap and hold a
+ * second press (within 280ms) for 350ms to mute. Ordinary hold decreases.
  *
  * Timers are injected for deterministic tests. No API calls or audio handling here.
  */
@@ -12,7 +14,9 @@ function createCompactGestures(emit,opts={}) {
   const holdMs=opts.holdMs||520;
   const doubleMs=opts.doubleMs||280;
   const repeatMs=opts.repeatMs||280;
-  const maxRepeats=opts.maxRepeats||12;\n  const tapHoldMs=opts.tapHoldMs||350;\n  const getMode=opts.getMode||(()=> 'doubleTap');
+  const maxRepeats=opts.maxRepeats||12;
+  const tapHoldMs=opts.tapHoldMs||350;
+  const getMode=opts.getMode||(()=> 'doubleTap');
   const keys=new Map();
   function state(ctx) {
     let s=keys.get(ctx);
@@ -28,7 +32,31 @@ function createCompactGestures(emit,opts={}) {
   function down(ctx){
     const s=state(ctx);
     if(s.pressed)return; // ignore duplicate keyDown events
-    s.mode=getMode(ctx)==='tapHold'?'tapHold':'doubleTap';\n    if(s.mode==='tapHold'){\n      s.second=s.tapTimer!==null;\n      clearTimer(s,'tapTimer');\n      s.pressed=true;s.holding=false;s.repeatCount=0;\n      s.holdTimer=later(function beginTapHold(){\n        s.holdTimer=null;\n        if(!s.pressed)return;\n        s.holding=true;\n        if(s.second){\n          s.second=false;\n          emit(ctx,'mute');\n          return; // no gain change or decrease on mute gesture\n        }\n        function repeat(){\n          if(!s.pressed||s.repeatCount>=maxRepeats)return;\n          s.repeatCount++;\n          emit(ctx,'decrease');\n          if(s.repeatCount<maxRepeats)s.repeatTimer=later(repeat,repeatMs);\n        }\n        repeat();\n      },s.second?tapHoldMs:holdMs);\n      return;\n    }\n    s.second=s.tapTimer!==null;
+    s.mode=getMode(ctx)==='tapHold'?'tapHold':'doubleTap';
+    if(s.mode==='tapHold'){
+      s.second=s.tapTimer!==null;
+      clearTimer(s,'tapTimer');
+      s.pressed=true;s.holding=false;s.repeatCount=0;
+      s.holdTimer=later(function beginTapHold(){
+        s.holdTimer=null;
+        if(!s.pressed)return;
+        s.holding=true;
+        if(s.second){
+          s.second=false;
+          emit(ctx,'mute');
+          return; // no gain change or decrease on mute gesture
+        }
+        function repeat(){
+          if(!s.pressed||s.repeatCount>=maxRepeats)return;
+          s.repeatCount++;
+          emit(ctx,'decrease');
+          if(s.repeatCount<maxRepeats)s.repeatTimer=later(repeat,repeatMs);
+        }
+        repeat();
+      },s.second?tapHoldMs:holdMs);
+      return;
+    }
+    s.second=s.tapTimer!==null;
     if(s.second)clearTimer(s,'tapTimer');
     s.pressed=true;s.holding=false;s.repeatCount=0;
     s.holdTimer=later(function beginHold(){
@@ -54,7 +82,15 @@ function createCompactGestures(emit,opts={}) {
     s.pressed=false;
     clearTimer(s,'holdTimer');
     clearTimer(s,'repeatTimer');
-    if(s.holding){s.holding=false;s.second=false;return;}\n    if(s.mode==='tapHold'){\n      // Every short tap is +1 step. A second short tap cannot mute.\n      s.second=false;\n      emit(ctx,'increase');\n      clearTimer(s,'tapTimer');\n      s.tapTimer=later(()=>{s.tapTimer=null;},doubleMs);\n      return;\n    }
+    if(s.holding){s.holding=false;s.second=false;return;}
+    if(s.mode==='tapHold'){
+      // Every short tap is +1 step. A second short tap cannot mute.
+      s.second=false;
+      emit(ctx,'increase');
+      clearTimer(s,'tapTimer');
+      s.tapTimer=later(()=>{s.tapTimer=null;},doubleMs);
+      return;
+    }
     if(s.second){
       s.second=false;
       emit(ctx,'mute');
