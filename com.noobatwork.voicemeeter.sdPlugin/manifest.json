@@ -3,8 +3,8 @@
   "Name": "NoobatWork Voicemeeter Control",
   "Category": "NoobatWork Voicemeeter",
   "Author": "NoobatWork",
-  "Description": "Live audio meters, gain/mute and five-key touch fader for Voicemeeter Potato",
-  "Version": "0.3.1.0",
+  "Description": "Compact one-button mixer, Voicemeeter gain and live signal meters",
+  "Version": "0.4.0.0",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "7.1"
@@ -84,6 +84,21 @@
       "UUID": "com.noobatwork.voicemeeter.mute",
       "Name": "Mute",
       "Tooltip": "Toggle mute for selected Voicemeeter strip or bus",
+      "Icon": "imgs/action",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/key",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "UUID": "com.noobatwork.voicemeeter.compact",
+      "Name": "Kompakt-Mixer",
+      "Tooltip": "Eine Taste pro Kanal: Tippen lauter, Halten leiser, doppelt Tippen Mute",
       "Icon": "imgs/action",
       "Controllers": [
         "Keypad"
