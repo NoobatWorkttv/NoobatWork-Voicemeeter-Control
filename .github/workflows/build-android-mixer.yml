@@ -60,6 +60,10 @@ jobs:
             adb reverse tcp:18879 tcp:18879
             gradle -p android-app connectedDebugAndroidTest
             test -f /tmp/mixer-command-proof.json
+            adb uninstall com.noobatwork.mixer
+            adb install android-app/app/build/outputs/apk/release/app-release.apk
+            adb shell am start -W -n com.noobatwork.mixer/.MixerActivity
+            sleep 3
             adb exec-out screencap -p > android-app/emulator.png
       - uses: actions/upload-artifact@v4
         if: always()
@@ -76,13 +80,8 @@ jobs:
           mkdir -p android-app/dist
           cp android-app/app/build/outputs/apk/release/app-release.apk android-app/dist/NoobatWork-Mixer-Android-v0.1.0-preview.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs android-app/dist/*.apk
-          cd android-app/dist
-          sha256sum *.apk > SHA256SUMS.txt
-          if gh release view v0.1.0-android-preview --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo 'Existing release preserved; no overwrite.'
-          else
-            gh release create v0.1.0-android-preview *.apk SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'NoobatWork Mixer Android v0.1.0 Preview' --notes-file ../RELEASE.md --prerelease
-          fi
+          (cd android-app/dist && sha256sum *.apk > SHA256SUMS.txt)
+          node android-app/tools/release.cjs
       - name: Remove signing material from runner
         if: always()
         run: rm -f "$RUNNER_TEMP/mixer.jks"
