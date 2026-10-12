@@ -15,9 +15,9 @@ internal static class Desktop
         var logs = new LogWriter();
         Console.SetOut(logs);
         Console.SetError(logs);
+        if (args.Contains("--self-test")) { SelfTest.Run(); return; }
         using var mutex = new Mutex(true, "Local\\NoobatWork-Mixer-Control-Center-v020", out bool first);
         if (!first) { MessageBox.Show("Das Control Center läuft bereits. Bitte das Symbol im Infobereich öffnen."); return; }
-        if (args.Contains("--self-test")) { SelfTest.Run(); return; }
         using var form = new ControlCenter(logs, args);
         Application.Run(form);
     }
@@ -56,7 +56,7 @@ internal sealed class ControlCenter : Form
     public ControlCenter(LogWriter writer, string[] args)
     {
         this.args = args; logWriter = writer;
-        Text = "NoobatWork Mixer Control Center · v0.2.0";
+        Text = "NoobatWork Mixer Control Center · v0.2.1";
         MinimumSize = new Size(920, 620); Size = new Size(1100, 760);
         Font = new Font("Segoe UI", 10); StartPosition = FormStartPosition.CenterScreen;
         var tabs = new TabControl { Dock = DockStyle.Fill };
@@ -119,6 +119,7 @@ internal sealed class ControlCenter : Form
     private void RefreshStatus()
     {
         if (!profileLoaded && MixerServer.Status == "Online") { LoadProfile(); profileLoaded = true; }
+        if (profileLoaded && MixerServer.Status == "Online") AppendDiscoveredItems(MixerServer.AvailableItems());
         status.Text = "Server: " + MixerServer.Status + "   |   " + MixerServer.AudioStatus;
         pairing.Text = MixerServer.Status == "Online" ? "Pairing-Code: " + MixerServer.PairingCode : "Pairing verfügbar, sobald der Server läuft";
         addresses.Text = string.Join(Environment.NewLine, MixerServer.Addresses());
@@ -136,6 +137,27 @@ internal sealed class ControlCenter : Form
                 if (!device.Items.Cast<DeviceChoice>().Any(x => x.Id == id)) device.Items.Add(new DeviceChoice(id, MixerServer.Profiles.Get(id).Name + " · " + id));
     }
     private string DeviceId => ((DeviceChoice)device.SelectedItem!).Id;
+    internal void AppendDiscoveredItems(IEnumerable<MixerItem> items)
+    {
+        var known = grid.Rows.Cast<DataGridViewRow>().Select(r => Convert.ToString(r.Cells[0].Value)).ToHashSet();
+        foreach (var item in items)
+            if (known.Add(item.Key)) grid.Rows.Add(item.Key, item.Name, item.Visible, item.Color);
+    }
+    internal void TestLateDiscovery()
+    {
+        grid.Rows.Clear();
+        grid.Rows.Add("channel:Strip[0]", "Unsaved microphone", false, "#123456");
+        grid.CurrentCell = grid.Rows[0].Cells[1];
+        var late = new[] { new MixerItem("app:escapefromtarkov.exe", "EscapeFromTarkov", true, "#668fff") };
+        AppendDiscoveredItems(late);
+        AppendDiscoveredItems(late);
+        AppendDiscoveredItems(Array.Empty<MixerItem>());
+        if (grid.Rows.Count != 2 || !Equals(grid.Rows[1].Cells[0].Value, late[0].Key)
+            || !Equals(grid.Rows[0].Cells[1].Value, "Unsaved microphone")
+            || !Equals(grid.Rows[0].Cells[2].Value, false) || !Equals(grid.Rows[0].Cells[3].Value, "#123456")
+            || grid.CurrentCell != grid.Rows[0].Cells[1])
+            throw new Exception("Late discovery must preserve edits and selection without duplicating rows");
+    }
     private void LoadProfile()
     {
         if (MixerServer.Profiles == null) return;

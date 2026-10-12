@@ -18,8 +18,9 @@ internal static class SelfTest
             TestAsync().GetAwaiter().GetResult();
             using var form = new ControlCenter(new LogWriter(), Array.Empty<string>());
             form.CreateControl();
-            Check(form.Text.Contains("v0.2.0") && form.Controls.Count > 0, "Native GUI construction");
-            File.WriteAllText(result, JsonSerializer.Serialize(new { passed = true, tests = new[] { "Windows HTTP", "pairing", "unauthorized requests", "wrong origin", "three simultaneous WebSockets", "invalid command", "device profiles live", "profile persistence", "profile validation", "native GUI construction", "graceful shutdown" } }));
+            form.TestLateDiscovery();
+            Check(form.Text.Contains("v0.2.1") && form.Controls.Count > 0, "Native GUI construction");
+            File.WriteAllText(result, JsonSerializer.Serialize(new { passed = true, tests = new[] { "Windows HTTP", "pairing", "unauthorized requests", "wrong origin", "three simultaneous WebSockets", "invalid command", "device profiles live", "profile persistence", "profile validation", "native GUI construction", "late app discovery preserves edits", "graceful shutdown" } }));
         }
         catch (Exception e) { File.WriteAllText(result, JsonSerializer.Serialize(new { passed = false, error = e.ToString() })); Environment.ExitCode = 1; }
     }

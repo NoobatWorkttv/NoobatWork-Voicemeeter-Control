@@ -1,4 +1,4 @@
-#define MyVersion "0.2.0"
+#define MyVersion "0.2.1"
 [Setup]
 AppId={{240AF10C-B25D-4B98-A743-21C17BE2F02F}
 AppName=NoobatWork Mixer Control Center
@@ -9,7 +9,7 @@ DefaultGroupName=NoobatWork Mixer Control Center
 PrivilegesRequired=lowest
 SourceDir=..
 OutputDir=dist
-OutputBaseFilename=NoobatWork-Mixer-Control-Center-v0.2.0-Setup
+OutputBaseFilename=NoobatWork-Mixer-Control-Center-v0.2.1-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

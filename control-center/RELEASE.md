@@ -1,5 +1,7 @@
-Separate Windows x64 **NoobatWork Mixer Control Center v0.2.0** preview.
+Separate Windows x64 **NoobatWork Mixer Control Center v0.2.1** preview.
 
+- Fix: applications started later (including Escape from Tarkov on VAIO3) are automatically appended to the profile editor without losing unsaved edits.
+- Browser: a visible Neue Apps button opens the applications view and scrolls to the first application not yet saved in the profile.
 - Native Windows GUI with system tray, server start/stop, pairing code and LAN URLs.
 - Windows Audio / Voicemeeter status, connected devices and bounded logs.
 - Editable per-device profiles: order, display name, visibility, color and layout.

@@ -1,4 +1,4 @@
-# NoobatWork Mixer Control Center v0.2.0
+# NoobatWork Mixer Control Center v0.2.1
 
 Separate Windows x64 WinForms GUI built on the existing iPad Mixer server,
 browser faders and **unchanged linked AudioEngine.cs**. No rewrite of the audio
@@ -6,8 +6,8 @@ bridge. The helper uses the existing `IPAD_MIXER` fast-ack build configuration.
 
 ## Installation / use
 
-Install `NoobatWork-Mixer-Control-Center-v0.2.0-Setup.exe` from the separate
-`v0.2.0-control-center` release. Start it from the Start menu. No console window.
+Install `NoobatWork-Mixer-Control-Center-v0.2.1-Setup.exe` from the separate
+`v0.2.1-control-center` release. Start it from the Start menu. No console window.
 The GUI shows server, Windows Audio and Voicemeeter status, LAN URLs and the
 six-digit pairing code. In Safari, Chrome, Edge or another current browser,
 open the LAN URL on port **8877** and pair. Windows touch PCs use the same client.
@@ -74,3 +74,12 @@ physical Android/Windows touch hardware, Wi-Fi latency/loss and audible quality.
 Installer is unsigned; Windows may show a publisher/SmartScreen warning.
 Pairing currently shares one token across browsers; per-device token revocation,
 HTTPS, autostart, named preset libraries and durable log export are not included.
+
+## v0.2.1: applications started after the mixer
+
+Start the Control Center, then start a game with audio. Within the next audio scan,
+its row is appended to Mixer & Profile automatically. Existing edits, visibility,
+colors and ordering stay intact. Save the desired profile to keep the new row.
+In the browser, Neue Apps opens Applications and scrolls to the first live app
+that is not saved in the current profile. Explicitly hidden apps remain hidden.
+After updating, reload browser clients to load the new interface.

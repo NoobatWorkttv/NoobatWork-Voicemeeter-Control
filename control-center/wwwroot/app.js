@@ -140,6 +140,11 @@
     paint();
   }
   for(const btn of tabButtons)btn.addEventListener('click',()=>setTab(btn.dataset.tab));
+  $('new-apps').addEventListener('click',()=>{
+    const first=window.NAWProfile.unconfiguredApps(client.state.apps,profile)[0];
+    setTab('apps');
+    if(first)client.cards.get('app:'+first.id)?.scrollIntoView({block:'nearest',inline:'start',behavior:'smooth'});
+  });
   const editFavorites=$('edit-favorites');
   editFavorites.addEventListener('click',()=>{
     client.editing=!client.editing;
@@ -340,6 +345,11 @@
   }
 
   function paint(){
+    const discovered=window.NAWProfile.unconfiguredApps(client.state.apps,profile);
+    const discoveryButton=$('new-apps');
+    discoveryButton.hidden=discovered.length===0;
+    discoveryButton.textContent='Neue Apps ('+discovered.length+') anzeigen';
+    discoveryButton.title=discovered.map(a=>a.name||a.id).join(', ');
     const items=currentItems();
     $('empty').hidden=items.length>0;
     $('empty').querySelector('strong').textContent=client.tab==='favorites'?'Noch keine Favoriten':'Keine aktiven Audiokanäle';

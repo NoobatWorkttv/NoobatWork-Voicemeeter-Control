@@ -9,7 +9,7 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AssemblyName>NoobatWork-Mixer-Control-Center</AssemblyName>
-    <Version>0.2.0</Version>
+    <Version>0.2.1</Version>
     <DefaultItemExcludes>$(DefaultItemExcludes);publish/**;dist/**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>

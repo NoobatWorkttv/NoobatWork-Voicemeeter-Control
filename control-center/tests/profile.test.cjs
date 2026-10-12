@@ -14,3 +14,14 @@ test('invalid colors cannot become CSS and no profile preserves order',()=>{
  assert.deepEqual(apply(input,null),input);
  assert.equal(apply(input,{Items:[{Key:'app:x.exe',Name:'',Visible:true,Color:'url(bad)'}]})[0].color,undefined);
 });
+
+test('late EFT discovery remains reachable and respects saved hidden apps',()=>{
+ const {unconfiguredApps}=require('../wwwroot/profile.js');
+ const profile={Items:[{Key:'app:discord.exe',Visible:false}]};
+ const old=[{id:'discord.exe'}],eft={id:'escapefromtarkov.exe',name:'EscapeFromTarkov'};
+ assert.deepEqual(unconfiguredApps(old,profile),[]);
+ assert.deepEqual(unconfiguredApps([...old,eft],profile),[eft]);
+ assert.deepEqual(apply([...old,eft].map(x=>({...x,type:'app'})),profile).map(x=>x.id),[eft.id]);
+ assert.deepEqual(unconfiguredApps([],profile),[]);
+ assert.deepEqual(unconfiguredApps([eft],{Items:[{Key:'app:'+eft.id,Visible:true}]}),[]);
+});

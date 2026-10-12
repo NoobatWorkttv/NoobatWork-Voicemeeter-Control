@@ -1,7 +1,7 @@
-name: Mixer Control Center v0.2.0
+name: Mixer Control Center v0.2.1
 on:
   push:
-    branches: [main, control-center-v0.2.0]
+    branches: [main, control-center-v0.2.1]
     paths: ['control-center/**', '.github/workflows/build-control-center.yml']
   workflow_dispatch:
 permissions:
@@ -55,14 +55,14 @@ jobs:
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
           & $iscc control-center/installer/ControlCenter.iss
           if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
-          $setup = Get-Item control-center/dist/NoobatWork-Mixer-Control-Center-v0.2.0-Setup.exe
+          $setup = Get-Item control-center/dist/NoobatWork-Mixer-Control-Center-v0.2.1-Setup.exe
           $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  $($setup.Name)" | Set-Content control-center/dist/SHA256SUMS.txt
       - name: Install and verify isolated package
         shell: pwsh
         run: |
           $target = Join-Path $env:RUNNER_TEMP 'center-installed'
-          $installer = Start-Process (Resolve-Path 'control-center/dist/NoobatWork-Mixer-Control-Center-v0.2.0-Setup.exe') -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$target" -WindowStyle Hidden -Wait -PassThru
+          $installer = Start-Process (Resolve-Path 'control-center/dist/NoobatWork-Mixer-Control-Center-v0.2.1-Setup.exe') -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$target" -WindowStyle Hidden -Wait -PassThru
           if ($installer.ExitCode -ne 0) { throw 'Setup failed' }
           foreach ($file in @('NoobatWork-Mixer-Control-Center.exe','bin/bridge.ps1','bin/NoobatWorkAudioSessions.exe','wwwroot/profile.js')) {
             if (-not (Test-Path (Join-Path $target $file))) { throw "Missing installed file: $file" }
@@ -74,7 +74,7 @@ jobs:
           if ($p.ExitCode -ne 0 -or -not (Get-Content $env:NAW_TEST_RESULT -Raw | ConvertFrom-Json).passed) { throw 'Installed app test failed' }
       - uses: actions/upload-artifact@v4
         with:
-          name: Control-Center-v0.2.0-Windows
+          name: Control-Center-v0.2.1-Windows
           path: control-center/dist/*
       - name: Publish new version without replacing any existing release
         shell: pwsh

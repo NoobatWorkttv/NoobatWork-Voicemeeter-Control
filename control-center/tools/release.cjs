@@ -3,8 +3,8 @@
 const fs=require('node:fs/promises');
 const crypto=require('node:crypto');
 const base='https://api.github.com/repos/NoobatWorkttv/NoobatWork-Voicemeeter-Control';
-const tag='v0.2.0-control-center';
-const names=['NoobatWork-Mixer-Control-Center-v0.2.0-Setup.exe','SHA256SUMS.txt'];
+const tag='v0.2.1-control-center';
+const names=['NoobatWork-Mixer-Control-Center-v0.2.1-Setup.exe','SHA256SUMS.txt'];
 const headers={Authorization:'Bearer '+process.env.GH_TOKEN,'User-Agent':'NoobatWork-Control-Center-Release','Accept':'application/vnd.github+json'};
 async function request(url,method='GET',body){
  const response=await fetch(url,{method,headers:{...headers,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
@@ -21,7 +21,7 @@ async function request(url,method='GET',body){
  }
  if(release&&release.target_commitish!==process.env.GITHUB_SHA)throw Error('Draft belongs to another commit; refusing overwrite');
  if(!release)release=await request(base+'/releases','POST',{
-   tag_name:tag,target_commitish:process.env.GITHUB_SHA,name:'NoobatWork Mixer Control Center v0.2.0',
+   tag_name:tag,target_commitish:process.env.GITHUB_SHA,name:'NoobatWork Mixer Control Center v0.2.1',
    body:await fs.readFile('control-center/RELEASE.md','utf8'),draft:true,prerelease:true,make_latest:'false'
  });
  for(const name of names){
