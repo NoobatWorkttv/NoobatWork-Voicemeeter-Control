@@ -27,9 +27,7 @@ public class MixerDeviceTest {
         context.getSharedPreferences("mixer",Context.MODE_PRIVATE).edit().clear().putString("address","http://127.0.0.1:18879/").commit();
         String identity;
         try(ActivityScenario<MixerActivity> scenario=ActivityScenario.launch(MixerActivity.class)) {
-            until(scenario,"!!document.getElementById('code')");
-            js(scenario,"localStorage.removeItem('naw-center-token');location.reload();");
-            until(scenario,"!!document.getElementById('code') && !document.getElementById('pair-overlay').hidden");
+            until(scenario,"document.readyState==='complete' && !!document.getElementById('code') && !!localStorage.getItem('naw-center-device')");
             js(scenario,"document.getElementById('code').value='123456';document.getElementById('pair-form').requestSubmit();");
             until(scenario,"document.getElementById('connection').textContent==='Verbunden'");
             until(scenario,"document.body.innerText.includes('EscapeFromTarkov')");
