@@ -60,7 +60,7 @@ jobs:
             adb reverse tcp:18879 tcp:18879
             gradle -p android-app connectedDebugAndroidTest
             test -f /tmp/mixer-command-proof.json
-            adb uninstall com.noobatwork.mixer
+            if adb shell pm list packages | grep -q '^package:com.noobatwork.mixer$'; then adb uninstall com.noobatwork.mixer; fi
             adb install android-app/app/build/outputs/apk/release/app-release.apk
             adb shell am start -W -n com.noobatwork.mixer/.MixerActivity
             sleep 3
